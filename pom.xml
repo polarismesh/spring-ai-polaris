@@ -1,0 +1,128 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.tencent.polaris</groupId>
+    <artifactId>spring-ai-polaris</artifactId>
+    <packaging>pom</packaging>
+    <version>${revision}</version>
+    <name>Spring AI Polaris</name>
+    <description>Spring AI Polaris</description>
+    <url>https://github.com/polarismesh/spring-ai-polaris</url>
+
+    <licenses>
+        <license>
+            <name>BSD 3-Clause License</name>
+            <url>https://opensource.org/licenses/BSD-3-Clause</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>SkyeBeFreeman</id>
+            <name>Haotian Zhang</name>
+            <email>928016560@qq.com</email>
+            <organization>Tencent</organization>
+            <url>https://github.com/SkyeBeFreeman/</url>
+        </developer>
+    </developers>
+
+    <properties>
+        <!-- Project revision -->
+        <revision>0.0.1-SNAPSHOT</revision>
+
+        <!-- Maven Plugin Versions -->
+        <flatten-maven-plugin.version>1.6.0</flatten-maven-plugin.version>
+        <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
+        <maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
+        <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
+        <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
+        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+        <spring-javaformat-checkstyle.version>0.0.47</spring-javaformat-checkstyle.version>
+
+        <disable.checks>false</disable.checks>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>${flatten-maven-plugin.version}</version>
+                <configuration>
+                    <updatePomFile>true</updatePomFile>
+                    <flattenMode>resolveCiFriendliesOnly</flattenMode>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>flatten.clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>checkstyle-check</id>
+            <activation>
+                <property>
+                    <name>!env.BOGUS</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-checkstyle-plugin</artifactId>
+                        <version>${maven-checkstyle-plugin.version}</version>
+                        <dependencies>
+                            <dependency>
+                                <groupId>com.puppycrawl.tools</groupId>
+                                <artifactId>checkstyle</artifactId>
+                                <version>${puppycrawl-tools-checkstyle.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>io.spring.javaformat</groupId>
+                                <artifactId>spring-javaformat-checkstyle</artifactId>
+                                <version>${spring-javaformat-checkstyle.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <executions>
+                            <execution>
+                                <id>checkstyle-validation</id>
+                                <phase>process-sources</phase>
+                                <inherited>true</inherited>
+                                <configuration>
+                                    <skip>${disable.checks}</skip>
+                                    <configLocation>${maven.multiModuleProjectDirectory}/src/checkstyle/checkstyle.xml</configLocation>
+                                    <headerLocation>${maven.multiModuleProjectDirectory}/src/checkstyle/checkstyle-header.txt</headerLocation>
+                                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                                    <consoleOutput>true</consoleOutput>
+                                    <failsOnError>${maven-checkstyle-plugin.failsOnError}</failsOnError>
+                                    <failOnViolation>${maven-checkstyle-plugin.failOnViolation}</failOnViolation>
+                                </configuration>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+</project>

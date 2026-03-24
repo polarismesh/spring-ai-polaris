@@ -1,0 +1,18 @@
+^\Q/*\E$
+^\Q * Tencent is pleased to support the open source community by making spring-ai-polaris available.\E$
+^\Q *\E$
+^\Q * Copyright (C) 2025 Tencent. All rights reserved.\E$
+^\Q *\E$
+^\Q * Licensed under the BSD 3-Clause License (the "License");\E$
+^\Q * you may not use this file except in compliance with the License.\E$
+^\Q * You may obtain a copy of the License at\E$
+^\Q *\E$
+^\Q * https://opensource.org/licenses/BSD-3-Clause\E$
+^\Q *\E$
+^\Q * Unless required by applicable law or agreed to in writing, software distributed\E$
+^\Q * under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR\E$
+^\Q * CONDITIONS OF ANY KIND, either express or implied. See the License for the\E$
+^\Q * specific language governing permissions and limitations under the License.\E$
+^\Q */\E$
+^$
+^.*$
