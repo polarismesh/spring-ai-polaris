@@ -59,6 +59,18 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Core -->
+            <dependency>
+                <groupId>com.tencent.polaris</groupId>
+                <artifactId>spring-ai-polaris-core</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <!-- Auto-Configurations -->
+            <dependency>
+                <groupId>com.tencent.polaris</groupId>
+                <artifactId>spring-ai-autoconfigure-core</artifactId>
+                <version>${revision}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
