@@ -33,13 +33,15 @@
         <revision>0.0.1-SNAPSHOT</revision>
 
         <!-- Maven Plugin Versions -->
-        <flatten-maven-plugin.version>1.6.0</flatten-maven-plugin.version>
+        <flatten-maven-plugin.version>1.7.0</flatten-maven-plugin.version>
         <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
         <maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
         <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
         <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
-        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+        <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
         <spring-javaformat-checkstyle.version>0.0.47</spring-javaformat-checkstyle.version>
+
+        <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
 
         <disable.checks>false</disable.checks>
     </properties>
@@ -67,6 +69,26 @@
                         <phase>clean</phase>
                         <goals>
                             <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
                         </goals>
                     </execution>
                 </executions>
