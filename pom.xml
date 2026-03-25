@@ -1,3 +1,19 @@
+<!--
+  ~ Tencent is pleased to support the open source community by making spring-ai-polaris available.
+  ~
+  ~ Copyright (C) 2025 Tencent. All rights reserved.
+  ~
+  ~ Licensed under the BSD 3-Clause License (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~ https://opensource.org/licenses/BSD-3-Clause
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software distributed
+  ~ under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+  ~ CONDITIONS OF ANY KIND, either express or implied. See the License for the
+  ~ specific language governing permissions and limitations under the License.
+  -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -28,26 +44,98 @@
         </developer>
     </developers>
 
+    <scm>
+        <url>https://github.com/polarismesh/spring-ai-polaris</url>
+        <connection>scm:git:git://github.com/polarismesh/spring-ai-polaris.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/polarismesh/spring-ai-polaris.git</developerConnection>
+        <tag>HEAD</tag>
+    </scm>
+
+    <modules>
+        <module>spring-ai-polaris-bom</module>
+    </modules>
+
     <properties>
         <!-- Project revision -->
         <revision>0.0.1-SNAPSHOT</revision>
 
+        <!-- Dependency versions -->
+        <spring-ai.version>1.1.3</spring-ai.version>
+        <polaris-java.version>2.1.2.0-SNAPSHOT</polaris-java.version>
+        <spring-boot.version>3.5.12</spring-boot.version>
+
         <!-- Maven Plugin Versions -->
         <flatten-maven-plugin.version>1.7.0</flatten-maven-plugin.version>
         <maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
-        <maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
-        <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
         <puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
         <maven-compiler-plugin.version>3.15.0</maven-compiler-plugin.version>
         <spring-javaformat-checkstyle.version>0.0.47</spring-javaformat-checkstyle.version>
-
         <jacoco-maven-plugin.version>0.8.14</jacoco-maven-plugin.version>
 
+        <!-- Project settings -->
+        <java.version>17</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
+        <maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
         <disable.checks>false</disable.checks>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- Third-party BOMs -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.springframework.ai</groupId>
+                <artifactId>spring-ai-bom</artifactId>
+                <version>${spring-ai.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.tencent.polaris</groupId>
+                <artifactId>polaris-all</artifactId>
+                <version>${polaris-java.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler-plugin.version}</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
