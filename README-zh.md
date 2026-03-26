@@ -1,5 +1,7 @@
 # Spring AI Polaris
 
+[![Codecov](https://codecov.io/gh/polarismesh/spring-ai-polaris/branch/main/graph/badge.svg)](https://codecov.io/gh/polarismesh/spring-ai-polaris)
+[![Testing](https://github.com/polarismesh/spring-ai-polaris/actions/workflows/testing.yml/badge.svg)](https://github.com/polarismesh/spring-ai-polaris/actions/workflows/testing.yml)
 [![License](https://img.shields.io/badge/License-BSD%203--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 
 [English](./README.md) | 简体中文

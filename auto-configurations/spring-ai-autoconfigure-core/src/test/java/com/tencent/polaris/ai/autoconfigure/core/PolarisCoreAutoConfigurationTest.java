@@ -17,6 +17,8 @@
 
 package com.tencent.polaris.ai.autoconfigure.core;
 
+import java.util.List;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -24,6 +26,9 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import com.tencent.polaris.ai.core.PolarisConfigModifier;
+import com.tencent.polaris.ai.core.PolarisConfigModifierOrder;
+import com.tencent.polaris.factory.ConfigAPIFactory;
+import com.tencent.polaris.factory.config.ConfigurationImpl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -62,6 +67,31 @@ class PolarisCoreAutoConfigurationTest {
 		this.contextRunner
 			.withPropertyValues("spring.ai.polaris.enabled=false")
 			.run(ctx -> assertThat(ctx).doesNotHaveBean(PolarisConfigModifier.class));
+	}
+
+	@DisplayName("addressConfigModifier sets server connector addresses")
+	@Test
+	void testAddressConfigModifierSetsAddresses() {
+		// Arrange & Act & Assert
+		this.contextRunner
+			.withPropertyValues("spring.ai.polaris.address=grpc://127.0.0.1:8091,grpc://127.0.0.2:8091")
+			.run(ctx -> {
+				PolarisConfigModifier modifier = ctx.getBean(PolarisConfigModifier.class);
+				ConfigurationImpl config = (ConfigurationImpl) ConfigAPIFactory.defaultConfig();
+				modifier.modify(config);
+				List<String> addresses = config.getGlobal().getServerConnector().getAddresses();
+				assertThat(addresses).containsExactly("grpc://127.0.0.1:8091", "grpc://127.0.0.2:8091");
+			});
+	}
+
+	@DisplayName("addressConfigModifier getOrder returns ADDRESS_ORDER")
+	@Test
+	void testAddressConfigModifierOrder() {
+		// Arrange & Act & Assert
+		this.contextRunner.run(ctx -> {
+			PolarisConfigModifier modifier = ctx.getBean(PolarisConfigModifier.class);
+			assertThat(modifier.getOrder()).isEqualTo(PolarisConfigModifierOrder.ADDRESS_ORDER);
+		});
 	}
 
 }

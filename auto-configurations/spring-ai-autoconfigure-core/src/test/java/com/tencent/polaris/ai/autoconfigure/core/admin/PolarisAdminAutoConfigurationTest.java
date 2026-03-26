@@ -24,6 +24,9 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import com.tencent.polaris.ai.core.PolarisConfigModifier;
+import com.tencent.polaris.ai.core.PolarisConfigModifierOrder;
+import com.tencent.polaris.factory.ConfigAPIFactory;
+import com.tencent.polaris.factory.config.ConfigurationImpl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -78,6 +81,31 @@ class PolarisAdminAutoConfigurationTest {
 		this.contextRunner
 			.withPropertyValues("spring.ai.polaris.enabled=false")
 			.run(ctx -> assertThat(ctx).doesNotHaveBean(PolarisConfigModifier.class));
+	}
+
+	@DisplayName("adminConfigModifier sets host and port on configuration")
+	@Test
+	void testAdminConfigModifierSetsHostAndPort() {
+		// Arrange & Act & Assert
+		this.contextRunner
+			.withPropertyValues("spring.ai.polaris.admin.host=127.0.0.1", "spring.ai.polaris.admin.port=9090")
+			.run(ctx -> {
+				PolarisConfigModifier modifier = ctx.getBean(PolarisConfigModifier.class);
+				ConfigurationImpl config = (ConfigurationImpl) ConfigAPIFactory.defaultConfig();
+				modifier.modify(config);
+				assertThat(config.getGlobal().getAdmin().getHost()).isEqualTo("127.0.0.1");
+				assertThat(config.getGlobal().getAdmin().getPort()).isEqualTo(9090);
+			});
+	}
+
+	@DisplayName("adminConfigModifier getOrder returns ADMIN_ORDER")
+	@Test
+	void testAdminConfigModifierOrder() {
+		// Arrange & Act & Assert
+		this.contextRunner.run(ctx -> {
+			PolarisConfigModifier modifier = ctx.getBean(PolarisConfigModifier.class);
+			assertThat(modifier.getOrder()).isEqualTo(PolarisConfigModifierOrder.ADMIN_ORDER);
+		});
 	}
 
 }
