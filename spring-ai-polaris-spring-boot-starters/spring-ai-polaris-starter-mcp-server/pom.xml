@@ -14,23 +14,26 @@
   ~ CONDITIONS OF ANY KIND, either express or implied. See the License for the
   ~ specific language governing permissions and limitations under the License.
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>com.tencent.ai.polaris</groupId>
         <artifactId>spring-ai-polaris</artifactId>
         <version>${revision}</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>spring-ai-polaris-core</artifactId>
-    <name>Spring AI Polaris Core</name>
-    <description>Core module for Spring AI Polaris</description>
+
+    <artifactId>spring-ai-polaris-starter-mcp-server</artifactId>
+    <name>Spring AI Polaris Starter MCP Server</name>
+    <description>Spring Boot starter for MCP server with Polaris registration</description>
 
     <dependencies>
         <dependency>
-            <groupId>com.tencent.polaris</groupId>
-            <artifactId>polaris-all</artifactId>
+            <groupId>com.tencent.ai.polaris</groupId>
+            <artifactId>spring-ai-polaris-autoconfigure-mcp-server</artifactId>
         </dependency>
     </dependencies>
+
 </project>

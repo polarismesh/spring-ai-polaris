@@ -25,4 +25,6 @@
 	<suppress files="generated-sources" checks="[a-zA-Z0-9]*" />
 
 	<suppress files="[\\/]src[\\/]test[\\/]java[\\/]" id="bannedNullabilityImports" />
+
+	<suppress files="[\\/]examples[\\/].*Application\.java" checks="HideUtilityClassConstructor" />
 </suppressions>

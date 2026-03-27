@@ -22,15 +22,30 @@
         <groupId>com.tencent.ai.polaris</groupId>
         <artifactId>spring-ai-polaris</artifactId>
         <version>${revision}</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>spring-ai-polaris-core</artifactId>
-    <name>Spring AI Polaris Core</name>
-    <description>Core module for Spring AI Polaris</description>
+    <artifactId>spring-ai-polaris-autoconfigure-mcp-server</artifactId>
+    <name>Spring AI Polaris Auto-Configuration MCP Server</name>
+    <description>Auto-configuration for MCP Server registration with Polaris</description>
 
     <dependencies>
         <dependency>
-            <groupId>com.tencent.polaris</groupId>
-            <artifactId>polaris-all</artifactId>
+            <groupId>com.tencent.ai.polaris</groupId>
+            <artifactId>spring-ai-polaris-autoconfigure-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tencent.ai.polaris</groupId>
+            <artifactId>spring-ai-polaris-mcp-server</artifactId>
+        </dependency>
+
+        <!-- spring-ai -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-autoconfigure-mcp-server-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-mcp</artifactId>
         </dependency>
     </dependencies>
 </project>

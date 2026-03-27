@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: mcp-example-sse-webflux-server
+  ai:
+    mcp:
+      server:
+        name: mcp-example-sse-webflux-server
+        version: 1.0.0
+        protocol: SSE
+    polaris:
+      address: 127.0.0.1:8091
+      namespace: default
+      mcp:
+        server:
+          service-name: mcp-example-sse-webflux-server
+
+server:
+  port: 48081

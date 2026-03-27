@@ -18,7 +18,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.tencent.polaris</groupId>
+    <groupId>com.tencent.ai.polaris</groupId>
     <artifactId>spring-ai-polaris</artifactId>
     <packaging>pom</packaging>
     <version>${revision}</version>
@@ -52,9 +52,26 @@
     </scm>
 
     <modules>
+        <!-- BOM -->
         <module>spring-ai-polaris-bom</module>
+
+        <!-- Core -->
         <module>spring-ai-polaris-core</module>
-        <module>auto-configurations/spring-ai-autoconfigure-core</module>
+
+        <!-- MCP -->
+        <module>mcp/spring-ai-polaris-mcp-common</module>
+        <module>mcp/spring-ai-polaris-mcp-server</module>
+
+        <!-- Auto-Configurations -->
+        <module>auto-configurations/spring-ai-polaris-autoconfigure-core</module>
+        <module>auto-configurations/spring-ai-polaris-autoconfigure-mcp-server</module>
+
+        <!-- Starters -->
+        <module>spring-ai-polaris-spring-boot-starters/spring-ai-polaris-starter-mcp-server</module>
+
+        <!-- Examples -->
+        <module>examples/mcp-example/mcp-example-server/mcp-example-sse-webflux-server</module>
+        <module>examples/mcp-example/mcp-example-server/mcp-example-streamable-webmvc-server</module>
     </modules>
 
     <properties>
@@ -88,7 +105,7 @@
         <dependencies>
             <!-- This project BOM -->
             <dependency>
-                <groupId>com.tencent.polaris</groupId>
+                <groupId>com.tencent.ai.polaris</groupId>
                 <artifactId>spring-ai-polaris-bom</artifactId>
                 <version>${revision}</version>
                 <type>pom</type>
@@ -136,6 +153,15 @@
     </dependencies>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -22,15 +22,20 @@
         <groupId>com.tencent.ai.polaris</groupId>
         <artifactId>spring-ai-polaris</artifactId>
         <version>${revision}</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>spring-ai-polaris-core</artifactId>
-    <name>Spring AI Polaris Core</name>
-    <description>Core module for Spring AI Polaris</description>
+    <artifactId>spring-ai-polaris-mcp-server</artifactId>
+    <name>Spring AI Polaris MCP Server</name>
+    <description>MCP Server registration with Polaris service discovery</description>
 
     <dependencies>
         <dependency>
-            <groupId>com.tencent.polaris</groupId>
-            <artifactId>polaris-all</artifactId>
+            <groupId>com.tencent.ai.polaris</groupId>
+            <artifactId>spring-ai-polaris-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.tencent.ai.polaris</groupId>
+            <artifactId>spring-ai-polaris-mcp-common</artifactId>
         </dependency>
     </dependencies>
 </project>

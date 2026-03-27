@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: mcp-example-streamable-webmvc-server
+  ai:
+    mcp:
+      server:
+        name: mcp-example-streamable-webmvc-server
+        version: 1.0.0
+        protocol: STREAMABLE
+    polaris:
+      address: 127.0.0.1:8091
+      namespace: default
+      mcp:
+        server:
+          service-name: mcp-example-streamable-webmvc-server
+
+server:
+  port: 48082

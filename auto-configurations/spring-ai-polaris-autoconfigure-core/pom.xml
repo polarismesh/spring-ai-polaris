@@ -22,15 +22,22 @@
         <groupId>com.tencent.ai.polaris</groupId>
         <artifactId>spring-ai-polaris</artifactId>
         <version>${revision}</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
-    <artifactId>spring-ai-polaris-core</artifactId>
-    <name>Spring AI Polaris Core</name>
-    <description>Core module for Spring AI Polaris</description>
+    <artifactId>spring-ai-polaris-autoconfigure-core</artifactId>
+    <name>Spring AI Polaris Auto-Configuration Core</name>
+    <description>Auto-configuration for Spring AI Polaris core module</description>
 
     <dependencies>
         <dependency>
-            <groupId>com.tencent.polaris</groupId>
-            <artifactId>polaris-all</artifactId>
+            <groupId>com.tencent.ai.polaris</groupId>
+            <artifactId>spring-ai-polaris-core</artifactId>
+        </dependency>
+
+        <!-- spring-boot -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
     </dependencies>
 </project>

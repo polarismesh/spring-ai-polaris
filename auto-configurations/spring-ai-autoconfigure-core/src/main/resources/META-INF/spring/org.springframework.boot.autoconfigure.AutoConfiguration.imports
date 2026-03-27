@@ -1,4 +1,0 @@
-com.tencent.polaris.ai.autoconfigure.core.PolarisCoreAutoConfiguration
-com.tencent.polaris.ai.autoconfigure.core.admin.PolarisAdminAutoConfiguration
-com.tencent.polaris.ai.autoconfigure.core.report.PolarisReporterAutoConfiguration
-com.tencent.polaris.ai.autoconfigure.core.PolarisSDKContextAutoConfiguration
