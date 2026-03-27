@@ -50,11 +50,15 @@ public class PolarisReporter {
 		result.setService(ctx.getServiceName());
 		result.setHost(ctx.getHost());
 		result.setPort(ctx.getPort());
+		result.setMethod(ctx.getMethod());
 		result.setDelay(ctx.getDelayMs());
+		result.setRetCode(ctx.getRetCode());
 		result.setRetStatus(ctx.getRetStatus());
 		if (logger.isDebugEnabled()) {
-			logger.debug("Reporting service call result to Polaris. service={}, host={}:{}, delay={}ms, status={}",
-					ctx.getServiceName(), ctx.getHost(), ctx.getPort(), ctx.getDelayMs(), ctx.getRetStatus());
+			logger.debug(
+					"Reporting service call result to Polaris. service={}, host={}:{}, method={}, delay={}ms, retCode={}, status={}",
+					ctx.getServiceName(), ctx.getHost(), ctx.getPort(), ctx.getMethod(), ctx.getDelayMs(),
+					ctx.getRetCode(), ctx.getRetStatus());
 		}
 		try {
 			this.sdkContextManager.getConsumerAPI().updateServiceCallResult(result);

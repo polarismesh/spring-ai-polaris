@@ -34,17 +34,23 @@ public class PolarisCallContext {
 
 	private final int port;
 
+	private final String method;
+
 	private final long delayMs;
+
+	private final int retCode;
 
 	private final RetStatus retStatus;
 
-	public PolarisCallContext(String namespace, String serviceName, String host, int port, long delayMs,
-			RetStatus retStatus) {
+	public PolarisCallContext(String namespace, String serviceName, String host, int port, String method,
+			long delayMs, int retCode, RetStatus retStatus) {
 		this.namespace = namespace;
 		this.serviceName = serviceName;
 		this.host = host;
 		this.port = port;
+		this.method = method;
 		this.delayMs = delayMs;
+		this.retCode = retCode;
 		this.retStatus = retStatus;
 	}
 
@@ -64,8 +70,16 @@ public class PolarisCallContext {
 		return this.port;
 	}
 
+	public String getMethod() {
+		return this.method;
+	}
+
 	public long getDelayMs() {
 		return this.delayMs;
+	}
+
+	public int getRetCode() {
+		return this.retCode;
 	}
 
 	public RetStatus getRetStatus() {

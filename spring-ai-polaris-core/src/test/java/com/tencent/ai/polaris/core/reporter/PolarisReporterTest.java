@@ -20,6 +20,7 @@ package com.tencent.ai.polaris.core.reporter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -30,6 +31,7 @@ import com.tencent.polaris.api.exception.PolarisException;
 import com.tencent.polaris.api.pojo.RetStatus;
 import com.tencent.polaris.api.rpc.ServiceCallResult;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -57,14 +59,45 @@ class PolarisReporterTest {
 		// Arrange
 		when(this.sdkContextManager.getConsumerAPI()).thenReturn(this.consumerAPI);
 		PolarisReporter reporter = new PolarisReporter(this.sdkContextManager);
-		PolarisCallContext ctx = new PolarisCallContext("default", "test-service", "127.0.0.1", 8080, 100L,
-				RetStatus.RetSuccess);
+		PolarisCallContext ctx = new PolarisCallContext("default", "test-service", "127.0.0.1", 8080,
+				"/api/v1/tools/list", 100L, 200, RetStatus.RetSuccess);
 
 		// Act
 		reporter.report(ctx);
 
 		// Assert
-		verify(this.consumerAPI).updateServiceCallResult(any(ServiceCallResult.class));
+		ArgumentCaptor<ServiceCallResult> captor = ArgumentCaptor.forClass(ServiceCallResult.class);
+		verify(this.consumerAPI).updateServiceCallResult(captor.capture());
+		ServiceCallResult result = captor.getValue();
+		assertThat(result.getNamespace()).isEqualTo("default");
+		assertThat(result.getService()).isEqualTo("test-service");
+		assertThat(result.getHost()).isEqualTo("127.0.0.1");
+		assertThat(result.getPort()).isEqualTo(8080);
+		assertThat(result.getMethod()).isEqualTo("/api/v1/tools/list");
+		assertThat(result.getDelay()).isEqualTo(100L);
+		assertThat(result.getRetCode()).isEqualTo(200);
+		assertThat(result.getRetStatus()).isEqualTo(RetStatus.RetSuccess);
+	}
+
+	@DisplayName("report sets method and retCode for failed call")
+	@Test
+	void testReportWithFailedCall() {
+		// Arrange
+		when(this.sdkContextManager.getConsumerAPI()).thenReturn(this.consumerAPI);
+		PolarisReporter reporter = new PolarisReporter(this.sdkContextManager);
+		PolarisCallContext ctx = new PolarisCallContext("default", "test-service", "127.0.0.1", 8080,
+				"/api/v1/tools/call", 500L, 500, RetStatus.RetFail);
+
+		// Act
+		reporter.report(ctx);
+
+		// Assert
+		ArgumentCaptor<ServiceCallResult> captor = ArgumentCaptor.forClass(ServiceCallResult.class);
+		verify(this.consumerAPI).updateServiceCallResult(captor.capture());
+		ServiceCallResult result = captor.getValue();
+		assertThat(result.getMethod()).isEqualTo("/api/v1/tools/call");
+		assertThat(result.getRetCode()).isEqualTo(500);
+		assertThat(result.getRetStatus()).isEqualTo(RetStatus.RetFail);
 	}
 
 	@DisplayName("report handles exception gracefully")
@@ -73,8 +106,8 @@ class PolarisReporterTest {
 		// Arrange
 		when(this.sdkContextManager.getConsumerAPI()).thenReturn(this.consumerAPI);
 		PolarisReporter reporter = new PolarisReporter(this.sdkContextManager);
-		PolarisCallContext ctx = new PolarisCallContext("default", "test-service", "127.0.0.1", 8080, 100L,
-				RetStatus.RetFail);
+		PolarisCallContext ctx = new PolarisCallContext("default", "test-service", "127.0.0.1", 8080,
+				"/api/v1/tools/list", 100L, 500, RetStatus.RetFail);
 		doThrow(new PolarisException(ErrorCode.INTERNAL_ERROR, "mock polaris error")).when(this.consumerAPI)
 			.updateServiceCallResult(any(ServiceCallResult.class));
 
