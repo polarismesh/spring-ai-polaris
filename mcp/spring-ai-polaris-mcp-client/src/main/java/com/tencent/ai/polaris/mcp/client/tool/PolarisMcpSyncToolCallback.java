@@ -25,27 +25,27 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 
 import org.springframework.ai.tool.ToolCallback;
 
-import com.tencent.ai.polaris.mcp.client.PolarisMcpSyncClient;
+import com.tencent.ai.polaris.mcp.client.PolarisMcpSyncClientCluster;
 
 /**
  * {@link ToolCallback} implementation that delegates tool calls to a
- * {@link PolarisMcpSyncClient}. Adapts MCP tools discovered via Polaris service
+ * {@link PolarisMcpSyncClientCluster}. Adapts MCP tools discovered via Polaris service
  * discovery to Spring AI's tool callback interface.
  *
  * @author Haotian Zhang
  */
 public class PolarisMcpSyncToolCallback extends AbstractPolarisMcpToolCallback {
 
-	private final PolarisMcpSyncClient mcpClient;
+	private final PolarisMcpSyncClientCluster clientCluster;
 
-	public PolarisMcpSyncToolCallback(PolarisMcpSyncClient mcpClient, Tool tool) {
-		super(Objects.requireNonNull(mcpClient, "mcpClient must not be null").getServerName(), tool);
-		this.mcpClient = mcpClient;
+	public PolarisMcpSyncToolCallback(PolarisMcpSyncClientCluster clientCluster, Tool tool) {
+		super(Objects.requireNonNull(clientCluster, "clientCluster must not be null").getServerName(), tool);
+		this.clientCluster = clientCluster;
 	}
 
 	@Override
 	protected CallToolResult doCallTool(CallToolRequest request) {
-		return this.mcpClient.callTool(request);
+		return this.clientCluster.callTool(request);
 	}
 
 }

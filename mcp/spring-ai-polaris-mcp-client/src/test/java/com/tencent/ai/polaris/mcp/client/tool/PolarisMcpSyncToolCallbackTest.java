@@ -28,7 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.tool.execution.ToolExecutionException;
 
-import com.tencent.ai.polaris.mcp.client.PolarisMcpSyncClient;
+import com.tencent.ai.polaris.mcp.client.PolarisMcpSyncClientCluster;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -46,7 +46,7 @@ import static org.mockito.Mockito.when;
 class PolarisMcpSyncToolCallbackTest {
 
 	@Mock
-	private PolarisMcpSyncClient mcpClient;
+	private PolarisMcpSyncClientCluster mcpClient;
 
 	@DisplayName("getToolDefinition returns prefixed tool name")
 	@Test

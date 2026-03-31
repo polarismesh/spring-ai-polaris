@@ -28,38 +28,39 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.support.ToolUtils;
 import org.springframework.util.Assert;
 
-import com.tencent.ai.polaris.mcp.client.AbstractPolarisMcpClient;
+import com.tencent.ai.polaris.mcp.client.AbstractPolarisMcpClientCluster;
 import com.tencent.polaris.api.utils.CollectionUtils;
 
 /**
  * Base {@link ToolCallbackProvider} that aggregates tools from multiple
- * {@link AbstractPolarisMcpClient} instances. Subclasses provide the concrete
- * tool collection strategy via {@link #collectToolCallbacks(AbstractPolarisMcpClient, List)}.
+ * {@link AbstractPolarisMcpClientCluster} instances. Subclasses provide the concrete
+ * tool collection strategy via
+ * {@link #collectToolCallbacks(AbstractPolarisMcpClientCluster, List)}.
  *
- * @param <C> the concrete Polaris MCP client type
+ * @param <C> the concrete Polaris MCP client cluster type
  * @author Haotian Zhang
  */
-public abstract class AbstractPolarisMcpToolCallbackProvider<C extends AbstractPolarisMcpClient<?>>
+public abstract class AbstractPolarisMcpToolCallbackProvider<C extends AbstractPolarisMcpClientCluster<?>>
 		implements ToolCallbackProvider {
 
 	private static final Logger logger = LoggerFactory.getLogger(AbstractPolarisMcpToolCallbackProvider.class);
 
-	private final List<C> mcpClients;
+	private final List<C> clientClusters;
 
-	protected AbstractPolarisMcpToolCallbackProvider(List<C> mcpClients) {
-		Assert.notNull(mcpClients, "mcpClients must not be null");
-		this.mcpClients = mcpClients;
+	protected AbstractPolarisMcpToolCallbackProvider(List<C> clientClusters) {
+		Assert.notNull(clientClusters, "clientClusters must not be null");
+		this.clientClusters = clientClusters;
 	}
 
 	@Override
 	public ToolCallback[] getToolCallbacks() {
 		List<ToolCallback> callbacks = new ArrayList<>();
-		for (C client : this.mcpClients) {
+		for (C clientCluster : this.clientClusters) {
 			try {
-				collectToolCallbacks(client, callbacks);
+				collectToolCallbacks(clientCluster, callbacks);
 			}
 			catch (Exception ex) {
-				logger.warn("Failed to list tools from service={}, skipping", client.getServerName(), ex);
+				logger.warn("Failed to list tools from service={}, skipping", clientCluster.getServerName(), ex);
 			}
 		}
 		ToolCallback[] array = callbacks.toArray(new ToolCallback[0]);
@@ -72,10 +73,11 @@ public abstract class AbstractPolarisMcpToolCallbackProvider<C extends AbstractP
 	}
 
 	/**
-	 * List tools from the given client and add the corresponding callbacks to the list.
-	 * @param client the MCP client
+	 * List tools from the given client cluster and add the corresponding callbacks to the
+	 * list.
+	 * @param clientCluster the MCP client cluster
 	 * @param callbacks the list to add tool callbacks to
 	 */
-	protected abstract void collectToolCallbacks(C client, List<ToolCallback> callbacks);
+	protected abstract void collectToolCallbacks(C clientCluster, List<ToolCallback> callbacks);
 
 }

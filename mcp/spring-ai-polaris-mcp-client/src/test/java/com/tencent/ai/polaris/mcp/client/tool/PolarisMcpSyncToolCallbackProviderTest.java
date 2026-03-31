@@ -28,7 +28,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.tool.ToolCallback;
 
-import com.tencent.ai.polaris.mcp.client.PolarisMcpSyncClient;
+import com.tencent.ai.polaris.mcp.client.PolarisMcpSyncClientCluster;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -45,10 +45,10 @@ import static org.mockito.Mockito.when;
 class PolarisMcpSyncToolCallbackProviderTest {
 
 	@Mock
-	private PolarisMcpSyncClient clientA;
+	private PolarisMcpSyncClientCluster clientA;
 
 	@Mock
-	private PolarisMcpSyncClient clientB;
+	private PolarisMcpSyncClientCluster clientB;
 
 	@DisplayName("getToolCallbacks aggregates from all clients")
 	@Test

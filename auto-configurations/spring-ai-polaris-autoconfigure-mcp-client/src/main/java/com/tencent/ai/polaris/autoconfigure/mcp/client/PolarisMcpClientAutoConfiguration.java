@@ -22,6 +22,18 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tencent.ai.polaris.autoconfigure.core.ConditionalOnPolarisEnabled;
+import com.tencent.ai.polaris.autoconfigure.core.PolarisCoreProperties;
+import com.tencent.ai.polaris.autoconfigure.core.PolarisSDKContextAutoConfiguration;
+import com.tencent.ai.polaris.autoconfigure.mcp.client.PolarisMcpClientProperties.PolarisMcpParameters;
+import com.tencent.ai.polaris.core.PolarisSDKContextManager;
+import com.tencent.ai.polaris.core.reporter.PolarisReporter;
+import com.tencent.ai.polaris.mcp.client.PolarisMcpAsyncClientCluster;
+import com.tencent.ai.polaris.mcp.client.PolarisMcpSyncClientCluster;
+import com.tencent.ai.polaris.mcp.client.tool.PolarisMcpAsyncToolCallbackProvider;
+import com.tencent.ai.polaris.mcp.client.tool.PolarisMcpSyncToolCallbackProvider;
+import com.tencent.ai.polaris.mcp.common.PolarisMcpMetadataKeys;
+import com.tencent.polaris.api.utils.StringUtils;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer;
@@ -35,23 +47,11 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import com.tencent.ai.polaris.autoconfigure.core.ConditionalOnPolarisEnabled;
-import com.tencent.ai.polaris.autoconfigure.core.PolarisCoreProperties;
-import com.tencent.ai.polaris.autoconfigure.core.PolarisSDKContextAutoConfiguration;
-import com.tencent.ai.polaris.autoconfigure.mcp.client.PolarisMcpClientProperties.PolarisMcpParameters;
-import com.tencent.ai.polaris.core.PolarisSDKContextManager;
-import com.tencent.ai.polaris.core.reporter.PolarisReporter;
-import com.tencent.ai.polaris.mcp.client.PolarisMcpAsyncClient;
-import com.tencent.ai.polaris.mcp.client.PolarisMcpSyncClient;
-import com.tencent.ai.polaris.mcp.client.tool.PolarisMcpAsyncToolCallbackProvider;
-import com.tencent.ai.polaris.mcp.client.tool.PolarisMcpSyncToolCallbackProvider;
-import com.tencent.ai.polaris.mcp.common.PolarisMcpMetadataKeys;
-import com.tencent.polaris.api.utils.StringUtils;
-
 /**
  * Auto-configuration for Polaris MCP client discovery. Creates
- * {@link PolarisMcpSyncClient} or {@link PolarisMcpAsyncClient} instances for each
- * configured service, along with their corresponding {@code ToolCallbackProvider}.
+ * {@link PolarisMcpSyncClientCluster} or {@link PolarisMcpAsyncClientCluster} instances
+ * for each configured service, along with their corresponding
+ * {@code ToolCallbackProvider}.
  * <p>
  * Client type (SYNC/ASYNC) is determined by {@code spring.ai.mcp.client.type} from
  * Spring AI's {@link McpClientCommonProperties}. Each service can override the global
@@ -67,35 +67,36 @@ import com.tencent.polaris.api.utils.StringUtils;
 @EnableConfigurationProperties(PolarisMcpClientProperties.class)
 public class PolarisMcpClientAutoConfiguration {
 
-	// ---- Sync clients ----
+	// ---- Sync client clusters ----
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public List<PolarisMcpSyncClient> polarisMcpSyncClients(PolarisMcpClientProperties clientProperties,
-			PolarisCoreProperties coreProperties, McpClientCommonProperties mcpClientProperties,
-			PolarisSDKContextManager sdkContextManager, ObjectProvider<PolarisReporter> reporter,
-			ObjectProvider<WebClient.Builder> webClientBuilder,
+	public List<PolarisMcpSyncClientCluster> polarisMcpSyncClientClusters(
+			PolarisMcpClientProperties clientProperties, PolarisCoreProperties coreProperties,
+			McpClientCommonProperties mcpClientProperties, PolarisSDKContextManager sdkContextManager,
+			ObjectProvider<PolarisReporter> reporter, ObjectProvider<WebClient.Builder> webClientBuilder,
 			ObjectProvider<ObjectMapper> objectMapper,
 			ObjectProvider<List<McpSyncClientCustomizer>> customizers) {
-		List<PolarisMcpSyncClient> clients = new ArrayList<>();
+		List<PolarisMcpSyncClientCluster> clusters = new ArrayList<>();
 		for (Map.Entry<String, PolarisMcpParameters> entry : clientProperties.getServices().entrySet()) {
-			String serviceName = entry.getKey();
+			String name = entry.getKey();
 			PolarisMcpParameters params = entry.getValue();
+			String serviceName = resolveServiceName(name, params);
 			String namespace = resolveNamespace(params, clientProperties, coreProperties);
 			String scheme = resolveScheme(params);
-			PolarisMcpSyncClient client = new PolarisMcpSyncClient(namespace, serviceName,
-					scheme, mcpClientProperties.getVersion(),
+			PolarisMcpSyncClientCluster cluster = new PolarisMcpSyncClientCluster(namespace, serviceName,
+					mcpClientProperties.getName(), scheme, mcpClientProperties.getVersion(),
 					mcpClientProperties.isInitialized(), sdkContextManager, reporter.getIfAvailable(),
 					webClientBuilder.getIfAvailable(WebClient::builder),
 					objectMapper.getIfAvailable(ObjectMapper::new),
 					customizers.getIfAvailable(List::of));
-			client.initialize();
-			client.watch();
-			clients.add(client);
+			cluster.initialize();
+			cluster.watch();
+			clusters.add(cluster);
 		}
-		return clients;
+		return clusters;
 	}
 
 	@Bean
@@ -103,49 +104,61 @@ public class PolarisMcpClientAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
 	public PolarisMcpSyncToolCallbackProvider polarisMcpSyncToolCallbackProvider(
-			List<PolarisMcpSyncClient> clients) {
-		return new PolarisMcpSyncToolCallbackProvider(clients);
+			List<PolarisMcpSyncClientCluster> clientClusters) {
+		return new PolarisMcpSyncToolCallbackProvider(clientClusters);
 	}
 
-	// ---- Async clients ----
+	// ---- Async client clusters ----
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public List<PolarisMcpAsyncClient> polarisMcpAsyncClients(PolarisMcpClientProperties clientProperties,
-			PolarisCoreProperties coreProperties, McpClientCommonProperties mcpClientProperties,
-			PolarisSDKContextManager sdkContextManager, ObjectProvider<PolarisReporter> reporter,
-			ObjectProvider<WebClient.Builder> webClientBuilder,
+	public List<PolarisMcpAsyncClientCluster> polarisMcpAsyncClientClusters(
+			PolarisMcpClientProperties clientProperties, PolarisCoreProperties coreProperties,
+			McpClientCommonProperties mcpClientProperties, PolarisSDKContextManager sdkContextManager,
+			ObjectProvider<PolarisReporter> reporter, ObjectProvider<WebClient.Builder> webClientBuilder,
 			ObjectProvider<ObjectMapper> objectMapper,
 			ObjectProvider<List<McpAsyncClientCustomizer>> customizers) {
-		List<PolarisMcpAsyncClient> clients = new ArrayList<>();
+		List<PolarisMcpAsyncClientCluster> clusters = new ArrayList<>();
 		for (Map.Entry<String, PolarisMcpParameters> entry : clientProperties.getServices().entrySet()) {
-			String serviceName = entry.getKey();
+			String name = entry.getKey();
 			PolarisMcpParameters params = entry.getValue();
+			String serviceName = resolveServiceName(name, params);
 			String namespace = resolveNamespace(params, clientProperties, coreProperties);
 			String scheme = resolveScheme(params);
-			PolarisMcpAsyncClient client = new PolarisMcpAsyncClient(namespace, serviceName,
-					scheme, mcpClientProperties.getVersion(),
+			PolarisMcpAsyncClientCluster cluster = new PolarisMcpAsyncClientCluster(namespace, serviceName,
+					mcpClientProperties.getName(), scheme, mcpClientProperties.getVersion(),
 					mcpClientProperties.isInitialized(), sdkContextManager, reporter.getIfAvailable(),
 					webClientBuilder.getIfAvailable(WebClient::builder),
 					objectMapper.getIfAvailable(ObjectMapper::new),
 					customizers.getIfAvailable(List::of));
-			client.initialize();
-			client.watch();
-			clients.add(client);
+			cluster.initialize();
+			cluster.watch();
+			clusters.add(cluster);
 		}
-		return clients;
+		return clusters;
 	}
 
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public PolarisMcpAsyncToolCallbackProvider polarisMcpAsyncToolCallbackProvider(
-			List<PolarisMcpAsyncClient> clients) {
-		return new PolarisMcpAsyncToolCallbackProvider(clients);
+			List<PolarisMcpAsyncClientCluster> clientClusters) {
+		return new PolarisMcpAsyncToolCallbackProvider(clientClusters);
 	}
 
 	// ---- Private helpers ----
+
+	/**
+	 * Resolves the Polaris service name. Uses {@link PolarisMcpParameters#serviceName()}
+	 * when set, otherwise falls back to the map key.
+	 */
+	private static String resolveServiceName(String name, PolarisMcpParameters params) {
+		if (params != null && StringUtils.isNotBlank(params.serviceName())) {
+			return params.serviceName();
+		}
+		return name;
+	}
 
 	/**
 	 * Resolves the namespace with the following priority: per-service parameter >

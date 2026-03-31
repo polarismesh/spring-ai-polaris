@@ -17,93 +17,60 @@
 
 package com.tencent.ai.polaris.mcp.client;
 
-import java.util.List;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpAsyncClient;
-import io.modelcontextprotocol.client.McpClient;
-import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
 import reactor.core.publisher.Mono;
 
-import org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer;
-import org.springframework.web.reactive.function.client.WebClient;
-
-import com.tencent.ai.polaris.core.PolarisSDKContextManager;
 import com.tencent.ai.polaris.core.reporter.PolarisReporter;
 import com.tencent.polaris.api.pojo.RetStatus;
+import com.tencent.polaris.client.pojo.Node;
 
 /**
- * Polaris-backed MCP async client. Extends {@link AbstractPolarisMcpClient} with
- * reactive {@link McpAsyncClient} instances.
+ * Single-connection Polaris-backed MCP async client. Wraps an {@link McpAsyncClient}
+ * together with its remote {@link Node} and Polaris call reporting.
  *
  * @author Haotian Zhang
  */
 public class PolarisMcpAsyncClient extends AbstractPolarisMcpClient<McpAsyncClient> {
 
-	private final List<McpAsyncClientCustomizer> customizers;
-
-	public PolarisMcpAsyncClient(String namespace, String serverName, String scheme, String clientVersion,
-			boolean initialized, PolarisSDKContextManager sdkContextManager, PolarisReporter polarisReporter,
-			WebClient.Builder webClientBuilder, ObjectMapper objectMapper,
-			List<McpAsyncClientCustomizer> customizers) {
-		super(namespace, serverName, scheme, clientVersion, initialized, sdkContextManager, polarisReporter,
-				webClientBuilder, objectMapper);
-		this.customizers = customizers != null ? customizers : List.of();
-	}
-
-	@Override
-	protected McpAsyncClient buildClient(String clientName, McpClientTransport transport,
-			McpSchema.Implementation clientInfo, boolean initialized) {
-		McpClient.AsyncSpec spec = McpClient.async(transport).clientInfo(clientInfo);
-		for (McpAsyncClientCustomizer customizer : this.customizers) {
-			customizer.customize(clientName, spec);
-		}
-		McpAsyncClient client = spec.build();
-		if (initialized) {
-			client.initialize().block();
-		}
-		return client;
-	}
-
-	@Override
-	protected void closeClient(McpAsyncClient client) {
-		client.close();
-	}
-
-	@Override
-	protected void closeClientGracefully(McpAsyncClient client) {
-		client.closeGracefully().block();
+	public PolarisMcpAsyncClient(McpAsyncClient client, Node node, String namespace, String serverName,
+			PolarisReporter polarisReporter) {
+		super(client, node, namespace, serverName, polarisReporter);
 	}
 
 	/**
-	 * Lists all tools available from a selected MCP server instance.
+	 * Calls a tool on the MCP server and reports the result to Polaris.
+	 * @param callToolRequest the call tool request
+	 * @return a {@link Mono} emitting the call tool result
+	 */
+	public Mono<McpSchema.CallToolResult> callTool(McpSchema.CallToolRequest callToolRequest) {
+		long startTime = System.currentTimeMillis();
+		return getClient().callTool(callToolRequest).doOnNext(result -> {
+			long delay = System.currentTimeMillis() - startTime;
+			RetStatus retStatus = isErrorResult(result) ? RetStatus.RetFail : RetStatus.RetSuccess;
+			reportCall(callToolRequest.name(), delay, retStatus);
+		}).doOnError(ex -> {
+			long delay = System.currentTimeMillis() - startTime;
+			reportCall(callToolRequest.name(), delay, RetStatus.RetFail);
+		});
+	}
+
+	/**
+	 * Lists all tools available from the MCP server.
 	 * @return a {@link Mono} emitting the list tools result
 	 */
 	public Mono<McpSchema.ListToolsResult> listTools() {
 		return getClient().listTools();
 	}
 
-	/**
-	 * Calls a tool on a selected MCP server instance and reports the result to Polaris.
-	 * @param callToolRequest the call tool request
-	 * @return a {@link Mono} emitting the call tool result
-	 */
-	public Mono<McpSchema.CallToolResult> callTool(McpSchema.CallToolRequest callToolRequest) {
-		return Mono.defer(() -> {
-			McpAsyncClient client = getClient();
-			String clientName = client.getClientInfo().name();
-			long startTime = System.currentTimeMillis();
-			return client.callTool(callToolRequest)
-				.doOnNext(result -> {
-					long delay = System.currentTimeMillis() - startTime;
-					RetStatus retStatus = isErrorResult(result) ? RetStatus.RetFail : RetStatus.RetSuccess;
-					reportCall(clientName, callToolRequest.name(), delay, retStatus);
-				}).doOnError(ex -> {
-					long delay = System.currentTimeMillis() - startTime;
-					reportCall(clientName, callToolRequest.name(), delay, RetStatus.RetFail);
-				});
-		});
+	@Override
+	protected void closeClient() {
+		getClient().close();
+	}
+
+	@Override
+	protected void closeClientGracefully() {
+		getClient().closeGracefully().block();
 	}
 
 }

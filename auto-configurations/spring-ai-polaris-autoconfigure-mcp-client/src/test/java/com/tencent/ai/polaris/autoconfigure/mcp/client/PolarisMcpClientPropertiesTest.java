@@ -53,8 +53,8 @@ class PolarisMcpClientPropertiesTest {
 		// Arrange
 		PolarisMcpClientProperties properties = new PolarisMcpClientProperties();
 		Map<String, PolarisMcpParameters> services = new LinkedHashMap<>();
-		services.put("svc-a", new PolarisMcpParameters(null, null));
-		services.put("svc-b", new PolarisMcpParameters("prod-ns", "https"));
+		services.put("svc-a", new PolarisMcpParameters(null, null, null));
+		services.put("svc-b", new PolarisMcpParameters("my-real-svc", "prod-ns", "https"));
 
 		// Act
 		properties.setEnabled(false);
@@ -66,6 +66,7 @@ class PolarisMcpClientPropertiesTest {
 		assertThat(properties.getNamespace()).isEqualTo("test-ns");
 		assertThat(properties.getServices()).hasSize(2);
 		assertThat(properties.getServices()).containsKeys("svc-a", "svc-b");
+		assertThat(properties.getServices().get("svc-b").serviceName()).isEqualTo("my-real-svc");
 		assertThat(properties.getServices().get("svc-b").namespace()).isEqualTo("prod-ns");
 		assertThat(properties.getServices().get("svc-b").scheme()).isEqualTo("https");
 	}
@@ -78,7 +79,7 @@ class PolarisMcpClientPropertiesTest {
 		properties.setEnabled(true);
 		properties.setNamespace("my-ns");
 		Map<String, PolarisMcpParameters> services = new LinkedHashMap<>();
-		services.put("svc-a", new PolarisMcpParameters(null, null));
+		services.put("svc-a", new PolarisMcpParameters(null, null, null));
 		properties.setServices(services);
 
 		// Act
@@ -94,9 +95,10 @@ class PolarisMcpClientPropertiesTest {
 	@Test
 	void testPolarisMcpParametersRecord() {
 		// Arrange
-		PolarisMcpParameters params = new PolarisMcpParameters("my-ns", "https");
+		PolarisMcpParameters params = new PolarisMcpParameters("my-svc", "my-ns", "https");
 
 		// Act & Assert
+		assertThat(params.serviceName()).isEqualTo("my-svc");
 		assertThat(params.namespace()).isEqualTo("my-ns");
 		assertThat(params.scheme()).isEqualTo("https");
 	}
@@ -105,9 +107,10 @@ class PolarisMcpClientPropertiesTest {
 	@Test
 	void testPolarisMcpParametersNullFields() {
 		// Arrange
-		PolarisMcpParameters params = new PolarisMcpParameters(null, null);
+		PolarisMcpParameters params = new PolarisMcpParameters(null, null, null);
 
 		// Act & Assert
+		assertThat(params.serviceName()).isNull();
 		assertThat(params.namespace()).isNull();
 		assertThat(params.scheme()).isNull();
 	}

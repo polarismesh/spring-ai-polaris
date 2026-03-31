@@ -19,11 +19,10 @@ package com.tencent.ai.polaris.mcp.client;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,9 +31,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 
-import org.springframework.web.reactive.function.client.WebClient;
-
-import com.tencent.ai.polaris.core.PolarisSDKContextManager;
 import com.tencent.ai.polaris.core.reporter.PolarisCallContext;
 import com.tencent.ai.polaris.core.reporter.PolarisReporter;
 import com.tencent.polaris.api.pojo.RetStatus;
@@ -55,118 +51,39 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class PolarisMcpAsyncClientTest {
 
-	@Mock
-	private PolarisSDKContextManager sdkContextManager;
+	private static final Node TEST_NODE = new Node("127.0.0.1", 8080);
 
 	@Mock
 	private PolarisReporter reporter;
 
 	@Mock
-	private McpAsyncClient clientA;
+	private McpAsyncClient mcpClient;
 
-	@Mock
-	private McpAsyncClient clientB;
+	private PolarisMcpAsyncClient client;
 
-	private PolarisMcpAsyncClient createClient() {
-		return new PolarisMcpAsyncClient("default", "test-service", "http", "0.0.1", true, this.sdkContextManager,
-				this.reporter, WebClient.builder(), new ObjectMapper(), List.of());
+	@BeforeEach
+	void setUp() {
+		this.client = new PolarisMcpAsyncClient(this.mcpClient, TEST_NODE, "default", "test-service",
+				this.reporter);
 	}
 
-	private PolarisMcpAsyncClient createClientWithoutReporter() {
-		return new PolarisMcpAsyncClient("default", "test-service", "http", "0.0.1", true, this.sdkContextManager,
-				null, WebClient.builder(), new ObjectMapper(), List.of());
-	}
-
-	@DisplayName("getClient throws when pool is empty")
+	@DisplayName("getClient returns the underlying MCP client")
 	@Test
-	void testGetClientThrowsWhenPoolEmpty() {
-		// Arrange
-		PolarisMcpAsyncClient client = createClient();
-
-		// Act & Assert
-		assertThatThrownBy(client::getClient).isInstanceOf(IllegalStateException.class)
-			.hasMessageContaining("No client available");
-	}
-
-	@DisplayName("getClient round-robins across pool entries")
-	@Test
-	void testGetClientRoundRobins() {
-		// Arrange
-		PolarisMcpAsyncClient client = createClient();
-		ConcurrentHashMap<String, McpAsyncClient> pool = client.getKeyToClientMap();
-		pool.put("127.0.0.1:8080", this.clientA);
-		pool.put("127.0.0.2:8080", this.clientB);
-
-		// Act
-		McpAsyncClient first = client.getClient();
-		McpAsyncClient second = client.getClient();
-
-		// Assert
-		assertThat(first).isNotSameAs(second);
-	}
-
-	@DisplayName("getNamespace returns the constructor value")
-	@Test
-	void testGetNamespaceReturnsConstructorValue() {
+	void testGetClientReturnsUnderlyingClient() {
 		// Arrange & Act & Assert
-		assertThat(createClient().getNamespace()).isEqualTo("default");
-	}
-
-	@DisplayName("getServerName returns the constructor value")
-	@Test
-	void testGetServerNameReturnsConstructorValue() {
-		// Arrange & Act & Assert
-		assertThat(createClient().getServerName()).isEqualTo("test-service");
-	}
-
-	@DisplayName("close clears the client pool")
-	@Test
-	void testCloseClearsPool() {
-		// Arrange
-		PolarisMcpAsyncClient client = createClient();
-		ConcurrentHashMap<String, McpAsyncClient> pool = client.getKeyToClientMap();
-		pool.put("127.0.0.1:8080", this.clientA);
-
-		// Act
-		client.close();
-
-		// Assert
-		assertThat(pool).isEmpty();
-	}
-
-	@DisplayName("closeGracefully clears pool")
-	@Test
-	void testCloseGracefullyClearsPool() {
-		// Arrange
-		PolarisMcpAsyncClient client = createClient();
-		ConcurrentHashMap<String, McpAsyncClient> pool = client.getKeyToClientMap();
-		pool.put("127.0.0.1:8080", this.clientA);
-		when(this.clientA.closeGracefully()).thenReturn(Mono.empty());
-
-		// Act
-		client.closeGracefully();
-
-		// Assert
-		assertThat(pool).isEmpty();
+		assertThat(this.client.getClient()).isSameAs(this.mcpClient);
 	}
 
 	@DisplayName("callTool reports success to Polaris on successful call")
 	@Test
 	void testCallToolReportsSuccessOnSuccess() {
 		// Arrange
-		PolarisMcpAsyncClient client = createClient();
-		ConcurrentHashMap<String, McpAsyncClient> pool = client.getKeyToClientMap();
-		pool.put("127.0.0.1:8080", this.clientA);
-		client.getClientNameToNode()
-			.put("default_test-service_127.0.0.1:8080/sse", new Node("127.0.0.1", 8080));
-		McpSchema.Implementation clientInfo = new McpSchema.Implementation("default_test-service_127.0.0.1:8080/sse", "0.0.1");
-		when(this.clientA.getClientInfo()).thenReturn(clientInfo);
 		McpSchema.CallToolRequest request = new McpSchema.CallToolRequest("myTool", Map.of());
 		McpSchema.CallToolResult expectedResult = new McpSchema.CallToolResult(List.of(), false);
-		when(this.clientA.callTool(request)).thenReturn(Mono.just(expectedResult));
+		when(this.mcpClient.callTool(request)).thenReturn(Mono.just(expectedResult));
 
 		// Act
-		McpSchema.CallToolResult result = client.callTool(request).block();
+		McpSchema.CallToolResult result = this.client.callTool(request).block();
 
 		// Assert
 		assertThat(result).isSameAs(expectedResult);
@@ -184,18 +101,11 @@ class PolarisMcpAsyncClientTest {
 	@Test
 	void testCallToolReportsFailureOnError() {
 		// Arrange
-		PolarisMcpAsyncClient client = createClient();
-		ConcurrentHashMap<String, McpAsyncClient> pool = client.getKeyToClientMap();
-		pool.put("127.0.0.1:8080", this.clientA);
-		client.getClientNameToNode()
-			.put("default_test-service_127.0.0.1:8080/sse", new Node("127.0.0.1", 8080));
-		McpSchema.Implementation clientInfo = new McpSchema.Implementation("default_test-service_127.0.0.1:8080/sse", "0.0.1");
-		when(this.clientA.getClientInfo()).thenReturn(clientInfo);
 		McpSchema.CallToolRequest request = new McpSchema.CallToolRequest("myTool", Map.of());
-		when(this.clientA.callTool(request)).thenReturn(Mono.error(new RuntimeException("connection error")));
+		when(this.mcpClient.callTool(request)).thenReturn(Mono.error(new RuntimeException("connection error")));
 
 		// Act & Assert
-		assertThatThrownBy(() -> client.callTool(request).block()).isInstanceOf(RuntimeException.class)
+		assertThatThrownBy(() -> this.client.callTool(request).block()).isInstanceOf(RuntimeException.class)
 			.hasMessage("connection error");
 		ArgumentCaptor<PolarisCallContext> captor = ArgumentCaptor.forClass(PolarisCallContext.class);
 		verify(this.reporter).report(captor.capture());
@@ -208,19 +118,12 @@ class PolarisMcpAsyncClientTest {
 	@Test
 	void testCallToolReportsFailureOnErrorResult() {
 		// Arrange
-		PolarisMcpAsyncClient client = createClient();
-		ConcurrentHashMap<String, McpAsyncClient> pool = client.getKeyToClientMap();
-		pool.put("127.0.0.1:8080", this.clientA);
-		client.getClientNameToNode()
-			.put("default_test-service_127.0.0.1:8080/sse", new Node("127.0.0.1", 8080));
-		McpSchema.Implementation clientInfo = new McpSchema.Implementation("default_test-service_127.0.0.1:8080/sse", "0.0.1");
-		when(this.clientA.getClientInfo()).thenReturn(clientInfo);
 		McpSchema.CallToolRequest request = new McpSchema.CallToolRequest("myTool", Map.of());
 		McpSchema.CallToolResult errorResult = new McpSchema.CallToolResult(List.of(), true);
-		when(this.clientA.callTool(request)).thenReturn(Mono.just(errorResult));
+		when(this.mcpClient.callTool(request)).thenReturn(Mono.just(errorResult));
 
 		// Act
-		McpSchema.CallToolResult result = client.callTool(request).block();
+		McpSchema.CallToolResult result = this.client.callTool(request).block();
 
 		// Assert
 		assertThat(result).isSameAs(errorResult);
@@ -235,20 +138,54 @@ class PolarisMcpAsyncClientTest {
 	@Test
 	void testReportCallSkipsWhenReporterNull() {
 		// Arrange
-		PolarisMcpAsyncClient client = createClientWithoutReporter();
-		ConcurrentHashMap<String, McpAsyncClient> pool = client.getKeyToClientMap();
-		pool.put("127.0.0.1:8080", this.clientA);
-		McpSchema.Implementation clientInfo = new McpSchema.Implementation("default_test-service_127.0.0.1:8080/sse", "0.0.1");
-		when(this.clientA.getClientInfo()).thenReturn(clientInfo);
+		PolarisMcpAsyncClient clientWithoutReporter = new PolarisMcpAsyncClient(this.mcpClient, TEST_NODE,
+				"default", "test-service", null);
 		McpSchema.CallToolRequest request = new McpSchema.CallToolRequest("myTool", Map.of());
 		McpSchema.CallToolResult expectedResult = new McpSchema.CallToolResult(List.of(), false);
-		when(this.clientA.callTool(request)).thenReturn(Mono.just(expectedResult));
+		when(this.mcpClient.callTool(request)).thenReturn(Mono.just(expectedResult));
 
 		// Act
-		client.callTool(request).block();
+		clientWithoutReporter.callTool(request).block();
 
 		// Assert
 		verifyNoInteractions(this.reporter);
+	}
+
+	@DisplayName("listTools delegates to underlying client")
+	@Test
+	void testListToolsDelegatesToClient() {
+		// Arrange
+		McpSchema.ListToolsResult expected = new McpSchema.ListToolsResult(List.of(), null);
+		when(this.mcpClient.listTools()).thenReturn(Mono.just(expected));
+
+		// Act
+		McpSchema.ListToolsResult result = this.client.listTools().block();
+
+		// Assert
+		assertThat(result).isSameAs(expected);
+	}
+
+	@DisplayName("closeClient delegates to underlying client")
+	@Test
+	void testCloseClientDelegatesToClient() {
+		// Arrange & Act
+		this.client.closeClient();
+
+		// Assert
+		verify(this.mcpClient).close();
+	}
+
+	@DisplayName("closeClientGracefully delegates to underlying client")
+	@Test
+	void testCloseClientGracefullyDelegatesToClient() {
+		// Arrange
+		when(this.mcpClient.closeGracefully()).thenReturn(Mono.empty());
+
+		// Act
+		this.client.closeClientGracefully();
+
+		// Assert
+		verify(this.mcpClient).closeGracefully();
 	}
 
 }

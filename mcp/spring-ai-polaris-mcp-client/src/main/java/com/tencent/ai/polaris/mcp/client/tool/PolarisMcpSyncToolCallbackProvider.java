@@ -24,29 +24,29 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 
-import com.tencent.ai.polaris.mcp.client.PolarisMcpSyncClient;
+import com.tencent.ai.polaris.mcp.client.PolarisMcpSyncClientCluster;
 
 /**
  * {@link ToolCallbackProvider} that aggregates tools from multiple
- * {@link PolarisMcpSyncClient} instances. Each client represents a Polaris-discovered
- * MCP service; tools from all services are collected, validated for uniqueness, and
- * returned as Spring AI {@link ToolCallback} instances.
+ * {@link PolarisMcpSyncClientCluster} instances. Each cluster represents a
+ * Polaris-discovered MCP service; tools from all services are collected, validated for
+ * uniqueness, and returned as Spring AI {@link ToolCallback} instances.
  *
  * @author Haotian Zhang
  */
 public class PolarisMcpSyncToolCallbackProvider
-		extends AbstractPolarisMcpToolCallbackProvider<PolarisMcpSyncClient> {
+		extends AbstractPolarisMcpToolCallbackProvider<PolarisMcpSyncClientCluster> {
 
-	public PolarisMcpSyncToolCallbackProvider(List<PolarisMcpSyncClient> mcpClients) {
-		super(mcpClients);
+	public PolarisMcpSyncToolCallbackProvider(List<PolarisMcpSyncClientCluster> clientClusters) {
+		super(clientClusters);
 	}
 
 	@Override
-	protected void collectToolCallbacks(PolarisMcpSyncClient client, List<ToolCallback> callbacks) {
-		McpSchema.ListToolsResult result = client.listTools();
+	protected void collectToolCallbacks(PolarisMcpSyncClientCluster clientCluster, List<ToolCallback> callbacks) {
+		McpSchema.ListToolsResult result = clientCluster.listTools();
 		if (result != null) {
 			result.tools()
-				.forEach(tool -> callbacks.add(new PolarisMcpSyncToolCallback(client, tool)));
+				.forEach(tool -> callbacks.add(new PolarisMcpSyncToolCallback(clientCluster, tool)));
 		}
 	}
 

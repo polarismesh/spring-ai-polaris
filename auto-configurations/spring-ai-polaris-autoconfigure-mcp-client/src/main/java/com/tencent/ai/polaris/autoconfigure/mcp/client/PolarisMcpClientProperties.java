@@ -25,17 +25,19 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * Configuration properties for Polaris MCP client discovery.
  * <p>
- * Each entry in {@link #services} maps a Polaris service name to its per-service
- * {@link PolarisMcpParameters}. Per-service parameters (namespace, scheme) override the
- * global defaults when set.
+ * Each entry in {@link #services} maps a logical name to its per-service
+ * {@link PolarisMcpParameters}. The {@link PolarisMcpParameters#serviceName()} is used
+ * for Polaris service discovery; when not set, the map key is used as the service name.
  *
  * <pre>
  * spring.ai.polaris.mcp.client:
  *   namespace: default
  *   services:
- *     my-service-a:
+ *     my-weather:
+ *       service-name: mcp-example-sse-webflux-server
  *       scheme: https
- *     my-service-b: {}
+ *     my-tools:
+ *       service-name: mcp-example-tools-server
  * </pre>
  *
  * @author Haotian Zhang
@@ -56,8 +58,10 @@ public class PolarisMcpClientProperties {
 	private String namespace;
 
 	/**
-	 * Map of Polaris service names to per-service parameters. The map key is the service
-	 * name, and the value contains optional overrides for namespace and scheme.
+	 * Map of logical names to per-service parameters. The map key is a logical name for
+	 * the service. Use {@link PolarisMcpParameters#serviceName()} to specify the actual
+	 * Polaris service name for discovery; when not set, the map key is used as the
+	 * service name.
 	 */
 	private Map<String, PolarisMcpParameters> services = new LinkedHashMap<>();
 
@@ -98,11 +102,13 @@ public class PolarisMcpClientProperties {
 	 * Per-service parameters for a Polaris MCP client connection. When a field is
 	 * {@code null}, the global default from {@link PolarisMcpClientProperties} is used.
 	 *
+	 * @param serviceName Polaris service name for discovery; when {@code null}, the map
+	 * key is used as the service name
 	 * @param namespace Polaris namespace for this service, overrides the global default
 	 * @param scheme URL scheme for this service (e.g. {@code https}), overrides the
 	 * global default
 	 */
-	public record PolarisMcpParameters(String namespace, String scheme) {
+	public record PolarisMcpParameters(String serviceName, String namespace, String scheme) {
 	}
 
 }

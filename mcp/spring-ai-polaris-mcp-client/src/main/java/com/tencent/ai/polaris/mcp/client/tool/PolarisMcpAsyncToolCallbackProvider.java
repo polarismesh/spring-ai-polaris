@@ -24,28 +24,28 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 
-import com.tencent.ai.polaris.mcp.client.PolarisMcpAsyncClient;
+import com.tencent.ai.polaris.mcp.client.PolarisMcpAsyncClientCluster;
 
 /**
  * {@link ToolCallbackProvider} that aggregates tools from multiple
- * {@link PolarisMcpAsyncClient} instances. Async counterpart of
+ * {@link PolarisMcpAsyncClientCluster} instances. Async counterpart of
  * {@link PolarisMcpSyncToolCallbackProvider}.
  *
  * @author Haotian Zhang
  */
 public class PolarisMcpAsyncToolCallbackProvider
-		extends AbstractPolarisMcpToolCallbackProvider<PolarisMcpAsyncClient> {
+		extends AbstractPolarisMcpToolCallbackProvider<PolarisMcpAsyncClientCluster> {
 
-	public PolarisMcpAsyncToolCallbackProvider(List<PolarisMcpAsyncClient> mcpClients) {
-		super(mcpClients);
+	public PolarisMcpAsyncToolCallbackProvider(List<PolarisMcpAsyncClientCluster> clientClusters) {
+		super(clientClusters);
 	}
 
 	@Override
-	protected void collectToolCallbacks(PolarisMcpAsyncClient client, List<ToolCallback> callbacks) {
-		McpSchema.ListToolsResult result = client.listTools().block();
+	protected void collectToolCallbacks(PolarisMcpAsyncClientCluster clientCluster, List<ToolCallback> callbacks) {
+		McpSchema.ListToolsResult result = clientCluster.listTools().block();
 		if (result != null) {
 			result.tools()
-				.forEach(tool -> callbacks.add(new PolarisMcpAsyncToolCallback(client, tool)));
+				.forEach(tool -> callbacks.add(new PolarisMcpAsyncToolCallback(clientCluster, tool)));
 		}
 	}
 

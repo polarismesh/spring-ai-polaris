@@ -29,7 +29,7 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.ai.tool.execution.ToolExecutionException;
 
-import com.tencent.ai.polaris.mcp.client.PolarisMcpAsyncClient;
+import com.tencent.ai.polaris.mcp.client.PolarisMcpAsyncClientCluster;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -47,7 +47,7 @@ import static org.mockito.Mockito.when;
 class PolarisMcpAsyncToolCallbackTest {
 
 	@Mock
-	private PolarisMcpAsyncClient mcpClient;
+	private PolarisMcpAsyncClientCluster mcpClient;
 
 	@DisplayName("getToolDefinition returns prefixed tool name")
 	@Test

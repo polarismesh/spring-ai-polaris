@@ -28,7 +28,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import com.tencent.ai.polaris.autoconfigure.core.PolarisCoreProperties;
 import com.tencent.ai.polaris.core.PolarisSDKContextManager;
-import com.tencent.ai.polaris.mcp.client.PolarisMcpSyncClient;
+import com.tencent.ai.polaris.mcp.client.PolarisMcpSyncClientCluster;
 import com.tencent.ai.polaris.mcp.client.tool.PolarisMcpAsyncToolCallbackProvider;
 import com.tencent.ai.polaris.mcp.client.tool.PolarisMcpSyncToolCallbackProvider;
 
@@ -103,8 +103,9 @@ class PolarisMcpClientAutoConfigurationTest {
 			.withBean(PolarisSDKContextManager.class, () -> mock(PolarisSDKContextManager.class))
 			.run(ctx -> {
 				assertThat(ctx).hasSingleBean(PolarisMcpSyncToolCallbackProvider.class);
-				List<PolarisMcpSyncClient> clients = ctx.getBean("polarisMcpSyncClients", List.class);
-				assertThat(clients).isEmpty();
+				List<PolarisMcpSyncClientCluster> clusters = ctx.getBean(
+						"polarisMcpSyncClientClusters", List.class);
+				assertThat(clusters).isEmpty();
 			});
 	}
 

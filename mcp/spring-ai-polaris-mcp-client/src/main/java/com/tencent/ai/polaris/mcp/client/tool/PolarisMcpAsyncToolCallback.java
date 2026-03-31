@@ -25,27 +25,28 @@ import io.modelcontextprotocol.spec.McpSchema.Tool;
 
 import org.springframework.ai.tool.ToolCallback;
 
-import com.tencent.ai.polaris.mcp.client.PolarisMcpAsyncClient;
+import com.tencent.ai.polaris.mcp.client.PolarisMcpAsyncClientCluster;
 
 /**
  * {@link ToolCallback} implementation that delegates tool calls to a
- * {@link PolarisMcpAsyncClient}. The async call result is obtained synchronously via
- * {@code .block()} since Spring AI's {@link ToolCallback#call(String)} is synchronous.
+ * {@link PolarisMcpAsyncClientCluster}. The async call result is obtained synchronously
+ * via {@code .block()} since Spring AI's {@link ToolCallback#call(String)} is
+ * synchronous.
  *
  * @author Haotian Zhang
  */
 public class PolarisMcpAsyncToolCallback extends AbstractPolarisMcpToolCallback {
 
-	private final PolarisMcpAsyncClient mcpClient;
+	private final PolarisMcpAsyncClientCluster clientCluster;
 
-	public PolarisMcpAsyncToolCallback(PolarisMcpAsyncClient mcpClient, Tool tool) {
-		super(Objects.requireNonNull(mcpClient, "mcpClient must not be null").getServerName(), tool);
-		this.mcpClient = mcpClient;
+	public PolarisMcpAsyncToolCallback(PolarisMcpAsyncClientCluster clientCluster, Tool tool) {
+		super(Objects.requireNonNull(clientCluster, "clientCluster must not be null").getServerName(), tool);
+		this.clientCluster = clientCluster;
 	}
 
 	@Override
 	protected CallToolResult doCallTool(CallToolRequest request) {
-		return this.mcpClient.callTool(request).block();
+		return this.clientCluster.callTool(request).block();
 	}
 
 }
