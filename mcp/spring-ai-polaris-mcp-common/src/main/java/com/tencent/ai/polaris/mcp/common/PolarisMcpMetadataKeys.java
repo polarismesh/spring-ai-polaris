@@ -52,6 +52,15 @@ public final class PolarisMcpMetadataKeys {
 	/** MCP endpoint path, e.g. {@code "/mcp"}, {@code "/sse"}. Optional. */
 	public static final String ENDPOINT_PATH = "mcp-endpoint-path";
 
+	/** Default endpoint path for SSE transport. */
+	public static final String DEFAULT_SSE_ENDPOINT_PATH = "/sse";
+
+	/** Default endpoint path for Streamable HTTP transport. */
+	public static final String DEFAULT_STREAMABLE_HTTP_ENDPOINT_PATH = "/mcp";
+
+	/** Default URL scheme for MCP client connections. */
+	public static final String DEFAULT_SCHEME = "http";
+
 	private PolarisMcpMetadataKeys() {
 	}
 
