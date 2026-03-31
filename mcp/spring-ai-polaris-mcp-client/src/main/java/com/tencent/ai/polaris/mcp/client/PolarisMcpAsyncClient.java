@@ -44,14 +44,16 @@ public class PolarisMcpAsyncClient extends AbstractPolarisMcpClient<McpAsyncClie
 	 * @return a {@link Mono} emitting the call tool result
 	 */
 	public Mono<McpSchema.CallToolResult> callTool(McpSchema.CallToolRequest callToolRequest) {
-		long startTime = System.currentTimeMillis();
-		return getClient().callTool(callToolRequest).doOnNext(result -> {
-			long delay = System.currentTimeMillis() - startTime;
-			RetStatus retStatus = isErrorResult(result) ? RetStatus.RetFail : RetStatus.RetSuccess;
-			reportCall(callToolRequest.name(), delay, retStatus);
-		}).doOnError(ex -> {
-			long delay = System.currentTimeMillis() - startTime;
-			reportCall(callToolRequest.name(), delay, RetStatus.RetFail);
+		return Mono.defer(() -> {
+			long startTime = System.currentTimeMillis();
+			return getClient().callTool(callToolRequest).doOnNext(result -> {
+				long delay = System.currentTimeMillis() - startTime;
+				RetStatus retStatus = isErrorResult(result) ? RetStatus.RetFail : RetStatus.RetSuccess;
+				reportCall(callToolRequest.name(), delay, retStatus);
+			}).doOnError(ex -> {
+				long delay = System.currentTimeMillis() - startTime;
+				reportCall(callToolRequest.name(), delay, RetStatus.RetFail);
+			});
 		});
 	}
 

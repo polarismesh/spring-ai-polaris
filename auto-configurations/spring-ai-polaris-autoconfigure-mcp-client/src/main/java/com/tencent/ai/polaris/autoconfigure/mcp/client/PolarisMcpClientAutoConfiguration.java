@@ -22,18 +22,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tencent.ai.polaris.autoconfigure.core.ConditionalOnPolarisEnabled;
-import com.tencent.ai.polaris.autoconfigure.core.PolarisCoreProperties;
-import com.tencent.ai.polaris.autoconfigure.core.PolarisSDKContextAutoConfiguration;
-import com.tencent.ai.polaris.autoconfigure.mcp.client.PolarisMcpClientProperties.PolarisMcpParameters;
-import com.tencent.ai.polaris.core.PolarisSDKContextManager;
-import com.tencent.ai.polaris.core.reporter.PolarisReporter;
-import com.tencent.ai.polaris.mcp.client.PolarisMcpAsyncClientCluster;
-import com.tencent.ai.polaris.mcp.client.PolarisMcpSyncClientCluster;
-import com.tencent.ai.polaris.mcp.client.tool.PolarisMcpAsyncToolCallbackProvider;
-import com.tencent.ai.polaris.mcp.client.tool.PolarisMcpSyncToolCallbackProvider;
-import com.tencent.ai.polaris.mcp.common.PolarisMcpMetadataKeys;
-import com.tencent.polaris.api.utils.StringUtils;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer;
@@ -46,6 +34,19 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import com.tencent.ai.polaris.autoconfigure.core.ConditionalOnPolarisEnabled;
+import com.tencent.ai.polaris.autoconfigure.core.PolarisCoreProperties;
+import com.tencent.ai.polaris.autoconfigure.core.PolarisSDKContextAutoConfiguration;
+import com.tencent.ai.polaris.autoconfigure.mcp.client.PolarisMcpClientProperties.PolarisMcpParameters;
+import com.tencent.ai.polaris.core.PolarisSDKContextManager;
+import com.tencent.ai.polaris.core.reporter.PolarisReporter;
+import com.tencent.ai.polaris.mcp.client.PolarisMcpAsyncClientCluster;
+import com.tencent.ai.polaris.mcp.client.PolarisMcpSyncClientCluster;
+import com.tencent.ai.polaris.mcp.client.tool.PolarisMcpAsyncToolCallbackProvider;
+import com.tencent.ai.polaris.mcp.client.tool.PolarisMcpSyncToolCallbackProvider;
+import com.tencent.ai.polaris.mcp.common.PolarisMcpMetadataKeys;
+import com.tencent.polaris.api.utils.StringUtils;
 
 /**
  * Auto-configuration for Polaris MCP client discovery. Creates

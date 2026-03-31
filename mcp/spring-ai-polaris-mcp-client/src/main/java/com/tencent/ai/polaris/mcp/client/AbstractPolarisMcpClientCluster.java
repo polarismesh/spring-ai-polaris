@@ -163,7 +163,7 @@ public abstract class AbstractPolarisMcpClientCluster<T extends AbstractPolarisM
 		List<Instance> instances = fetchHealthyInstances();
 		for (Instance instance : instances) {
 			Node key = instanceNode(instance);
-			this.keyToClientMap.computeIfAbsent(key, k -> createWrapper(instance));
+			this.keyToClientMap.computeIfAbsent(key, k -> createWrapper(instance, key));
 		}
 		logger.info("[Polaris MCP Client] Initialized {} clients for service={}", this.keyToClientMap.size(),
 				this.serverName);
@@ -191,7 +191,7 @@ public abstract class AbstractPolarisMcpClientCluster<T extends AbstractPolarisM
 								continue;
 							}
 							Node key = instanceNode(inst);
-							this.keyToClientMap.computeIfAbsent(key, k -> createWrapper(inst));
+							this.keyToClientMap.computeIfAbsent(key, k -> createWrapper(inst, key));
 							added.add(key);
 						}
 					}
@@ -214,9 +214,15 @@ public abstract class AbstractPolarisMcpClientCluster<T extends AbstractPolarisM
 							if (old != null) {
 								old.closeClientGracefully();
 							}
-							Node afterKey = instanceNode(update.getAfter());
-							this.keyToClientMap.computeIfAbsent(afterKey, k -> createWrapper(update.getAfter()));
-							updated.add(beforeKey + "->" + afterKey);
+							if (update.getAfter().isHealthy()) {
+								Node afterKey = instanceNode(update.getAfter());
+								this.keyToClientMap.computeIfAbsent(afterKey,
+										k -> createWrapper(update.getAfter(), afterKey));
+								updated.add(beforeKey + "->" + afterKey);
+							}
+							else {
+								updated.add(beforeKey + "->removed(unhealthy)");
+							}
 						});
 					}
 					logger.info("[Polaris MCP Client] Watch event for service={}: added={}, removed={}, updated={},"
@@ -239,7 +245,7 @@ public abstract class AbstractPolarisMcpClientCluster<T extends AbstractPolarisM
 		// watchService()
 		for (Instance instance : fetchHealthyInstances()) {
 			Node key = instanceNode(instance);
-			this.keyToClientMap.computeIfAbsent(key, k -> createWrapper(instance));
+			this.keyToClientMap.computeIfAbsent(key, k -> createWrapper(instance, key));
 		}
 		logger.info("[Polaris MCP Client] Watch registered for service={}. pool size={}", this.serverName,
 				this.keyToClientMap.size());
@@ -305,10 +311,10 @@ public abstract class AbstractPolarisMcpClientCluster<T extends AbstractPolarisM
 		}
 	}
 
-	private T createWrapper(Instance instance) {
+	private T createWrapper(Instance instance, Node node) {
 		String protocol = instance.getProtocol();
 		String endpointPath = resolveEndpointPath(instance);
-		String baseUrl = this.scheme + "://" + instance.getHost() + ":" + instance.getPort();
+		String baseUrl = this.scheme + "://" + node.getHost() + ":" + node.getPort();
 
 		WebClient.Builder builder = this.webClientBuilder.clone().baseUrl(baseUrl);
 		McpClientTransport transport;
@@ -327,12 +333,11 @@ public abstract class AbstractPolarisMcpClientCluster<T extends AbstractPolarisM
 				.build();
 		}
 
-		String connectedName = connectedName(instance);
+		String connectedName = connectedName(instance, endpointPath);
 		McpSchema.Implementation clientInfo = new McpSchema.Implementation(connectedName, this.clientVersion);
-		Node node = new Node(instance.getHost(), instance.getPort());
 
 		T wrapper = createClientWrapper(transport, clientInfo, connectedName, node, this.initialized);
-		logger.info("[Polaris MCP Client] Built client for {}:{}", instance.getHost(), instance.getPort());
+		logger.info("[Polaris MCP Client] Built client for {}:{}", node.getHost(), node.getPort());
 		return wrapper;
 	}
 
@@ -340,9 +345,8 @@ public abstract class AbstractPolarisMcpClientCluster<T extends AbstractPolarisM
 		return new Node(instance.getHost(), instance.getPort());
 	}
 
-	private String connectedName(Instance instance) {
-		String endpointPath = resolveEndpointPath(instance);
-		return this.clientName + "-" + this.namespace + "_" + this.serverName + "_" + instance.getHost() + ":"
+	private String connectedName(Instance instance, String endpointPath) {
+		return this.clientName + "_" + this.namespace + "_" + this.serverName + "_" + instance.getHost() + ":"
 				+ instance.getPort() + endpointPath;
 	}
 
