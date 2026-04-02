@@ -1,0 +1,21 @@
+server:
+  port: 48080
+spring:
+  application:
+    name: mcp-example-client
+  ai:
+    openai:
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      api-key: ${OPENAI_API_KEY:sk-xxx}
+    mcp:
+      client:
+        name: mcp-example-client
+        version: 1.0.0
+    polaris:
+      address: 127.0.0.1:8091
+      namespace: default
+      mcp:
+        client:
+          services:
+            my-weather:
+              service-name: mcp-example-sse-webflux-server

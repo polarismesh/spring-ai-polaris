@@ -48,8 +48,7 @@ public class PolarisReporterAutoConfiguration {
 		return new PolarisConfigModifier() {
 			@Override
 			public void modify(ConfigurationImpl configuration) {
-				StatReporterConfigImpl statReporterConfig =
-						(StatReporterConfigImpl) configuration.getGlobal().getStatReporter();
+				StatReporterConfigImpl statReporterConfig = configuration.getGlobal().getStatReporter();
 				statReporterConfig.setEnable(properties.isEnabled());
 				if (properties.isEnabled()) {
 					PrometheusHandlerConfig prometheusConfig = statReporterConfig.getPluginConfig(

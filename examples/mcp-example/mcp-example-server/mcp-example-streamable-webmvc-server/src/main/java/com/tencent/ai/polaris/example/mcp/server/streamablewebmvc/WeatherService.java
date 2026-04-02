@@ -17,6 +17,8 @@
 
 package com.tencent.ai.polaris.example.mcp.server.streamablewebmvc;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springaicommunity.mcp.annotation.McpTool;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 
@@ -30,11 +32,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class WeatherService {
 
+	private static final Logger logger = LoggerFactory.getLogger(WeatherService.class);
+
 	@McpTool(name = "getWeather", description = "Get current weather for a city")
 	public String getWeather(
 			@McpToolParam(description = "City name") String city) {
+		logger.info("Received getWeather request for city={}", city);
 		// Stub implementation for demo purposes
-		return "Sunny, 25°C in " + city;
+		String result = "Sunny, 25°C in " + city;
+		logger.info("Returning weather result: {}", result);
+		return result;
 	}
 
 }

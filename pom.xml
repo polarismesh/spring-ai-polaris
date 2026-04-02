@@ -75,6 +75,7 @@
         <!-- Examples -->
         <module>examples/mcp-example/mcp-example-server/mcp-example-sse-webflux-server</module>
         <module>examples/mcp-example/mcp-example-server/mcp-example-streamable-webmvc-server</module>
+        <module>examples/mcp-example/mcp-example-client</module>
     </modules>
 
     <properties>

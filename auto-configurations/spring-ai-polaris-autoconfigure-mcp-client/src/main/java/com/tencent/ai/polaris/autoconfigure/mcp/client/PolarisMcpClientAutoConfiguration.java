@@ -23,6 +23,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.customizer.McpAsyncClientCustomizer;
 import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
@@ -60,7 +61,7 @@ import com.tencent.polaris.api.utils.StringUtils;
  *
  * @author Haotian Zhang
  */
-@AutoConfiguration(after = PolarisSDKContextAutoConfiguration.class)
+@AutoConfiguration(after = { PolarisSDKContextAutoConfiguration.class, McpClientAutoConfiguration.class })
 @ConditionalOnPolarisEnabled
 @ConditionalOnProperty(prefix = "spring.ai.polaris.mcp.client", name = "enabled", havingValue = "true",
 		matchIfMissing = true)
