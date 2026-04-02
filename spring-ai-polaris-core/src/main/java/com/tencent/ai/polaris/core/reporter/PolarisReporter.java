@@ -54,11 +54,9 @@ public class PolarisReporter {
 		result.setDelay(ctx.getDelayMs());
 		result.setRetCode(ctx.getRetCode());
 		result.setRetStatus(ctx.getRetStatus());
+		result.setInstanceType(ctx.getInstanceType());
 		if (logger.isDebugEnabled()) {
-			logger.debug(
-					"Reporting service call result to Polaris. service={}, host={}:{}, method={}, delay={}ms, retCode={}, status={}",
-					ctx.getServiceName(), ctx.getHost(), ctx.getPort(), ctx.getMethod(), ctx.getDelayMs(),
-					ctx.getRetCode(), ctx.getRetStatus());
+			logger.debug("Reporting service call result to Polaris. {}", ctx);
 		}
 		try {
 			this.sdkContextManager.getConsumerAPI().updateServiceCallResult(result);

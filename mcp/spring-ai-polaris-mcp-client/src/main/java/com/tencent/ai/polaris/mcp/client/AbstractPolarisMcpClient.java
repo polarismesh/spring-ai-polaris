@@ -21,6 +21,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 
 import com.tencent.ai.polaris.core.reporter.PolarisCallContext;
 import com.tencent.ai.polaris.core.reporter.PolarisReporter;
+import com.tencent.polaris.api.pojo.InstanceType;
 import com.tencent.polaris.api.pojo.RetStatus;
 import com.tencent.polaris.client.pojo.Node;
 
@@ -80,8 +81,17 @@ public abstract class AbstractPolarisMcpClient<C> {
 			return;
 		}
 		int retCode = (retStatus == RetStatus.RetSuccess) ? RET_CODE_SUCCESS : RET_CODE_FAIL;
-		this.polarisReporter.report(new PolarisCallContext(this.namespace, this.serverName, this.node.getHost(),
-				this.node.getPort(), method, delay, retCode, retStatus));
+		this.polarisReporter.report(PolarisCallContext.builder()
+			.namespace(this.namespace)
+			.serviceName(this.serverName)
+			.host(this.node.getHost())
+			.port(this.node.getPort())
+			.method(method)
+			.delayMs(delay)
+			.retCode(retCode)
+			.retStatus(retStatus)
+			.instanceType(InstanceType.MCP)
+			.build());
 	}
 
 	/**

@@ -28,6 +28,7 @@ import com.tencent.ai.polaris.core.PolarisSDKContextManager;
 import com.tencent.polaris.api.core.ConsumerAPI;
 import com.tencent.polaris.api.exception.ErrorCode;
 import com.tencent.polaris.api.exception.PolarisException;
+import com.tencent.polaris.api.pojo.InstanceType;
 import com.tencent.polaris.api.pojo.RetStatus;
 import com.tencent.polaris.api.rpc.ServiceCallResult;
 
@@ -59,8 +60,16 @@ class PolarisReporterTest {
 		// Arrange
 		when(this.sdkContextManager.getConsumerAPI()).thenReturn(this.consumerAPI);
 		PolarisReporter reporter = new PolarisReporter(this.sdkContextManager);
-		PolarisCallContext ctx = new PolarisCallContext("default", "test-service", "127.0.0.1", 8080,
-				"/api/v1/tools/list", 100L, 200, RetStatus.RetSuccess);
+		PolarisCallContext ctx = PolarisCallContext.builder()
+			.namespace("default")
+			.serviceName("test-service")
+			.host("127.0.0.1")
+			.port(8080)
+			.method("/api/v1/tools/list")
+			.delayMs(100L)
+			.retCode(200)
+			.retStatus(RetStatus.RetSuccess)
+			.build();
 
 		// Act
 		reporter.report(ctx);
@@ -77,6 +86,7 @@ class PolarisReporterTest {
 		assertThat(result.getDelay()).isEqualTo(100L);
 		assertThat(result.getRetCode()).isEqualTo(200);
 		assertThat(result.getRetStatus()).isEqualTo(RetStatus.RetSuccess);
+		assertThat(result.getInstanceType()).isEqualTo(InstanceType.MICROSERVICE);
 	}
 
 	@DisplayName("report sets method and retCode for failed call")
@@ -85,8 +95,16 @@ class PolarisReporterTest {
 		// Arrange
 		when(this.sdkContextManager.getConsumerAPI()).thenReturn(this.consumerAPI);
 		PolarisReporter reporter = new PolarisReporter(this.sdkContextManager);
-		PolarisCallContext ctx = new PolarisCallContext("default", "test-service", "127.0.0.1", 8080,
-				"/api/v1/tools/call", 500L, 500, RetStatus.RetFail);
+		PolarisCallContext ctx = PolarisCallContext.builder()
+			.namespace("default")
+			.serviceName("test-service")
+			.host("127.0.0.1")
+			.port(8080)
+			.method("/api/v1/tools/call")
+			.delayMs(500L)
+			.retCode(500)
+			.retStatus(RetStatus.RetFail)
+			.build();
 
 		// Act
 		reporter.report(ctx);
@@ -106,14 +124,52 @@ class PolarisReporterTest {
 		// Arrange
 		when(this.sdkContextManager.getConsumerAPI()).thenReturn(this.consumerAPI);
 		PolarisReporter reporter = new PolarisReporter(this.sdkContextManager);
-		PolarisCallContext ctx = new PolarisCallContext("default", "test-service", "127.0.0.1", 8080,
-				"/api/v1/tools/list", 100L, 500, RetStatus.RetFail);
+		PolarisCallContext ctx = PolarisCallContext.builder()
+			.namespace("default")
+			.serviceName("test-service")
+			.host("127.0.0.1")
+			.port(8080)
+			.method("/api/v1/tools/list")
+			.delayMs(100L)
+			.retCode(500)
+			.retStatus(RetStatus.RetFail)
+			.build();
 		doThrow(new PolarisException(ErrorCode.INTERNAL_ERROR, "mock polaris error")).when(this.consumerAPI)
 			.updateServiceCallResult(any(ServiceCallResult.class));
 
 		// Act & Assert
 		assertThatCode(() -> reporter.report(ctx)).doesNotThrowAnyException();
 		verify(this.consumerAPI).updateServiceCallResult(any(ServiceCallResult.class));
+	}
+
+	@DisplayName("report sets MCP instanceType when context specifies MCP")
+	@Test
+	void testReportWithMcpInstanceType() {
+		// Arrange
+		when(this.sdkContextManager.getConsumerAPI()).thenReturn(this.consumerAPI);
+		PolarisReporter reporter = new PolarisReporter(this.sdkContextManager);
+		PolarisCallContext ctx = PolarisCallContext.builder()
+			.namespace("default")
+			.serviceName("mcp-server")
+			.host("127.0.0.1")
+			.port(8080)
+			.method("/api/v1/tools/list")
+			.delayMs(100L)
+			.retCode(200)
+			.retStatus(RetStatus.RetSuccess)
+			.instanceType(InstanceType.MCP)
+			.build();
+
+		// Act
+		reporter.report(ctx);
+
+		// Assert
+		ArgumentCaptor<ServiceCallResult> captor = ArgumentCaptor.forClass(ServiceCallResult.class);
+		verify(this.consumerAPI).updateServiceCallResult(captor.capture());
+		ServiceCallResult result = captor.getValue();
+		assertThat(result.getInstanceType()).isEqualTo(InstanceType.MCP);
+		assertThat(result.getNamespace()).isEqualTo("default");
+		assertThat(result.getService()).isEqualTo("mcp-server");
 	}
 
 }

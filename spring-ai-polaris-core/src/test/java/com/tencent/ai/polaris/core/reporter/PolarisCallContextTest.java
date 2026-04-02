@@ -20,6 +20,7 @@ package com.tencent.ai.polaris.core.reporter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.tencent.polaris.api.pojo.InstanceType;
 import com.tencent.polaris.api.pojo.RetStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,8 +54,16 @@ class PolarisCallContextTest {
 		RetStatus retStatus = RetStatus.RetSuccess;
 
 		// Act
-		PolarisCallContext ctx = new PolarisCallContext(TEST_NAMESPACE, TEST_SERVICE, TEST_HOST, TEST_PORT,
-				TEST_METHOD, TEST_DELAY_MS, TEST_RET_CODE, retStatus);
+		PolarisCallContext ctx = PolarisCallContext.builder()
+			.namespace(TEST_NAMESPACE)
+			.serviceName(TEST_SERVICE)
+			.host(TEST_HOST)
+			.port(TEST_PORT)
+			.method(TEST_METHOD)
+			.delayMs(TEST_DELAY_MS)
+			.retCode(TEST_RET_CODE)
+			.retStatus(retStatus)
+			.build();
 
 		// Assert
 		assertThat(ctx.getNamespace()).isEqualTo(TEST_NAMESPACE);
@@ -65,6 +74,7 @@ class PolarisCallContextTest {
 		assertThat(ctx.getDelayMs()).isEqualTo(TEST_DELAY_MS);
 		assertThat(ctx.getRetCode()).isEqualTo(TEST_RET_CODE);
 		assertThat(ctx.getRetStatus()).isEqualTo(RetStatus.RetSuccess);
+		assertThat(ctx.getInstanceType()).isEqualTo(InstanceType.MICROSERVICE);
 	}
 
 	@DisplayName("constructor with RetFail status and error code")
@@ -75,13 +85,84 @@ class PolarisCallContextTest {
 		int retCode = 500;
 
 		// Act
-		PolarisCallContext ctx = new PolarisCallContext(TEST_NAMESPACE, TEST_SERVICE, TEST_HOST, TEST_PORT,
-				TEST_METHOD, TEST_DELAY_MS, retCode, retStatus);
+		PolarisCallContext ctx = PolarisCallContext.builder()
+			.namespace(TEST_NAMESPACE)
+			.serviceName(TEST_SERVICE)
+			.host(TEST_HOST)
+			.port(TEST_PORT)
+			.method(TEST_METHOD)
+			.delayMs(TEST_DELAY_MS)
+			.retCode(retCode)
+			.retStatus(retStatus)
+			.build();
 
 		// Assert
 		assertThat(ctx.getRetStatus()).isEqualTo(RetStatus.RetFail);
 		assertThat(ctx.getRetCode()).isEqualTo(retCode);
 		assertThat(ctx.getMethod()).isEqualTo(TEST_METHOD);
+		assertThat(ctx.getInstanceType()).isEqualTo(InstanceType.MICROSERVICE);
+	}
+
+	@DisplayName("constructor with explicit instanceType returns correct value")
+	@Test
+	void testConstructorWithInstanceType() {
+		// Arrange
+		RetStatus retStatus = RetStatus.RetSuccess;
+
+		// Act
+		PolarisCallContext ctx = PolarisCallContext.builder()
+			.namespace(TEST_NAMESPACE)
+			.serviceName(TEST_SERVICE)
+			.host(TEST_HOST)
+			.port(TEST_PORT)
+			.method(TEST_METHOD)
+			.delayMs(TEST_DELAY_MS)
+			.retCode(TEST_RET_CODE)
+			.retStatus(retStatus)
+			.instanceType(InstanceType.MCP)
+			.build();
+
+		// Assert
+		assertThat(ctx.getInstanceType()).isEqualTo(InstanceType.MCP);
+		assertThat(ctx.getNamespace()).isEqualTo(TEST_NAMESPACE);
+		assertThat(ctx.getServiceName()).isEqualTo(TEST_SERVICE);
+		assertThat(ctx.getHost()).isEqualTo(TEST_HOST);
+		assertThat(ctx.getPort()).isEqualTo(TEST_PORT);
+		assertThat(ctx.getMethod()).isEqualTo(TEST_METHOD);
+		assertThat(ctx.getDelayMs()).isEqualTo(TEST_DELAY_MS);
+		assertThat(ctx.getRetCode()).isEqualTo(TEST_RET_CODE);
+		assertThat(ctx.getRetStatus()).isEqualTo(RetStatus.RetSuccess);
+	}
+
+	@DisplayName("toString contains all fields")
+	@Test
+	void testToString() {
+		// Arrange
+		PolarisCallContext ctx = PolarisCallContext.builder()
+			.namespace(TEST_NAMESPACE)
+			.serviceName(TEST_SERVICE)
+			.host(TEST_HOST)
+			.port(TEST_PORT)
+			.method(TEST_METHOD)
+			.delayMs(TEST_DELAY_MS)
+			.retCode(TEST_RET_CODE)
+			.retStatus(RetStatus.RetSuccess)
+			.instanceType(InstanceType.MCP)
+			.build();
+
+		// Act
+		String result = ctx.toString();
+
+		// Assert
+		assertThat(result).contains("namespace='default'");
+		assertThat(result).contains("serviceName='test-service'");
+		assertThat(result).contains("host='127.0.0.1'");
+		assertThat(result).contains("port=8080");
+		assertThat(result).contains("method='/api/v1/tools/list'");
+		assertThat(result).contains("delayMs=150");
+		assertThat(result).contains("retCode=200");
+		assertThat(result).contains("retStatus=RetSuccess");
+		assertThat(result).contains("instanceType=MCP");
 	}
 
 }
