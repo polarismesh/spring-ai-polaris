@@ -17,6 +17,9 @@
 
 package com.tencent.ai.polaris.autoconfigure.mcp.server;
 
+import java.util.List;
+
+import io.modelcontextprotocol.spec.McpSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +30,8 @@ import org.springframework.context.ApplicationListener;
 import com.tencent.ai.polaris.autoconfigure.core.PolarisCoreProperties;
 import com.tencent.ai.polaris.core.utils.PolarisInetUtils;
 import com.tencent.ai.polaris.mcp.common.PolarisMcpMetadataKeys;
+import com.tencent.ai.polaris.mcp.server.McpServerCapabilitiesProvider;
+import com.tencent.ai.polaris.mcp.server.PolarisMcpServerContractReporter;
 import com.tencent.ai.polaris.mcp.server.PolarisMcpServerRegistry;
 import com.tencent.polaris.api.utils.StringUtils;
 
@@ -46,11 +51,18 @@ public class PolarisMcpServerListener implements ApplicationListener<WebServerIn
 
 	private final PolarisCoreProperties coreProperties;
 
+	private final PolarisMcpServerContractReporter contractReporter;
+
+	private final McpServerCapabilitiesProvider capabilitiesProvider;
+
 	public PolarisMcpServerListener(PolarisMcpServerRegistry registry, PolarisMcpServerProperties properties,
-			PolarisCoreProperties coreProperties) {
+			PolarisCoreProperties coreProperties, PolarisMcpServerContractReporter contractReporter,
+			McpServerCapabilitiesProvider capabilitiesProvider) {
 		this.registry = registry;
 		this.properties = properties;
 		this.coreProperties = coreProperties;
+		this.contractReporter = contractReporter;
+		this.capabilitiesProvider = capabilitiesProvider;
 	}
 
 	@Override
@@ -87,9 +99,31 @@ public class PolarisMcpServerListener implements ApplicationListener<WebServerIn
 			}
 
 			this.registry.register(host, port);
+
+			// Service contract reporting
+			reportContractIfEnabled();
 		}
 		catch (Exception ex) {
 			logger.error("Failed to register MCP server with Polaris.", ex);
+		}
+	}
+
+	private void reportContractIfEnabled() {
+		if (this.contractReporter == null || this.capabilitiesProvider == null) {
+			logger.debug("Contract reporter or capabilities provider not available,"
+					+ " skipping contract reporting.");
+			return;
+		}
+
+		try {
+			List<McpSchema.Tool> tools = this.capabilitiesProvider.listTools();
+			List<McpSchema.Resource> resources = this.capabilitiesProvider.listResources();
+			List<McpSchema.Prompt> prompts = this.capabilitiesProvider.listPrompts();
+
+			this.contractReporter.reportContract(this.registry.getProtocol(), tools, resources, prompts);
+		}
+		catch (Exception ex) {
+			logger.error("Failed to report MCP server contract to Polaris.", ex);
 		}
 	}
 

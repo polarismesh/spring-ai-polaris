@@ -17,6 +17,8 @@
 
 package com.tencent.ai.polaris.autoconfigure.mcp.server;
 
+import java.util.Collections;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,9 +32,12 @@ import org.springframework.boot.web.server.WebServer;
 
 import com.tencent.ai.polaris.autoconfigure.core.PolarisCoreProperties;
 import com.tencent.ai.polaris.mcp.common.PolarisMcpMetadataKeys;
+import com.tencent.ai.polaris.mcp.server.McpServerCapabilitiesProvider;
+import com.tencent.ai.polaris.mcp.server.PolarisMcpServerContractReporter;
 import com.tencent.ai.polaris.mcp.server.PolarisMcpServerRegistry;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -63,6 +68,12 @@ class PolarisMcpServerListenerTest {
 	@Mock
 	private WebServerApplicationContext applicationContext;
 
+	@Mock
+	private PolarisMcpServerContractReporter contractReporter;
+
+	@Mock
+	private McpServerCapabilitiesProvider capabilitiesProvider;
+
 	private PolarisMcpServerProperties properties;
 
 	private PolarisCoreProperties coreProperties;
@@ -74,7 +85,8 @@ class PolarisMcpServerListenerTest {
 		this.properties = new PolarisMcpServerProperties();
 		this.coreProperties = new PolarisCoreProperties();
 		lenient().when(this.registry.getProtocol()).thenReturn(PolarisMcpMetadataKeys.PROTOCOL_MCP_SSE);
-		this.listener = new PolarisMcpServerListener(this.registry, this.properties, this.coreProperties);
+		this.listener = new PolarisMcpServerListener(this.registry, this.properties, this.coreProperties,
+				this.contractReporter, this.capabilitiesProvider);
 	}
 
 	@DisplayName("register is called on application event")
@@ -85,6 +97,9 @@ class PolarisMcpServerListenerTest {
 		when(this.applicationContext.getServerNamespace()).thenReturn(null);
 		when(this.event.getWebServer()).thenReturn(this.webServer);
 		when(this.webServer.getPort()).thenReturn(8080);
+		lenient().when(this.capabilitiesProvider.listTools()).thenReturn(Collections.emptyList());
+		lenient().when(this.capabilitiesProvider.listResources()).thenReturn(Collections.emptyList());
+		lenient().when(this.capabilitiesProvider.listPrompts()).thenReturn(Collections.emptyList());
 
 		// Act
 		this.listener.onApplicationEvent(this.event);
@@ -143,6 +158,9 @@ class PolarisMcpServerListenerTest {
 		when(this.applicationContext.getServerNamespace()).thenReturn(null);
 		when(this.event.getWebServer()).thenReturn(this.webServer);
 		when(this.webServer.getPort()).thenReturn(8080);
+		lenient().when(this.capabilitiesProvider.listTools()).thenReturn(Collections.emptyList());
+		lenient().when(this.capabilitiesProvider.listResources()).thenReturn(Collections.emptyList());
+		lenient().when(this.capabilitiesProvider.listPrompts()).thenReturn(Collections.emptyList());
 
 		// Act
 		this.listener.onApplicationEvent(this.event);
@@ -158,6 +176,9 @@ class PolarisMcpServerListenerTest {
 		this.properties.setPort(9090);
 		when(this.event.getApplicationContext()).thenReturn(this.applicationContext);
 		when(this.applicationContext.getServerNamespace()).thenReturn(null);
+		lenient().when(this.capabilitiesProvider.listTools()).thenReturn(Collections.emptyList());
+		lenient().when(this.capabilitiesProvider.listResources()).thenReturn(Collections.emptyList());
+		lenient().when(this.capabilitiesProvider.listPrompts()).thenReturn(Collections.emptyList());
 
 		// Act
 		this.listener.onApplicationEvent(this.event);
@@ -174,12 +195,71 @@ class PolarisMcpServerListenerTest {
 		this.properties.setPort(9090);
 		when(this.event.getApplicationContext()).thenReturn(this.applicationContext);
 		when(this.applicationContext.getServerNamespace()).thenReturn(null);
+		lenient().when(this.capabilitiesProvider.listTools()).thenReturn(Collections.emptyList());
+		lenient().when(this.capabilitiesProvider.listResources()).thenReturn(Collections.emptyList());
+		lenient().when(this.capabilitiesProvider.listPrompts()).thenReturn(Collections.emptyList());
 
 		// Act
 		this.listener.onApplicationEvent(this.event);
 
 		// Assert
 		verify(this.registry).register(eq("127.0.0.1"), eq(9090));
+	}
+
+	@DisplayName("contract is reported after successful registration")
+	@Test
+	void testContractReportedAfterRegistration() {
+		// Arrange
+		when(this.event.getApplicationContext()).thenReturn(this.applicationContext);
+		when(this.applicationContext.getServerNamespace()).thenReturn(null);
+		when(this.event.getWebServer()).thenReturn(this.webServer);
+		when(this.webServer.getPort()).thenReturn(8080);
+		when(this.capabilitiesProvider.listTools()).thenReturn(Collections.emptyList());
+		when(this.capabilitiesProvider.listResources()).thenReturn(Collections.emptyList());
+		when(this.capabilitiesProvider.listPrompts()).thenReturn(Collections.emptyList());
+
+		// Act
+		this.listener.onApplicationEvent(this.event);
+
+		// Assert
+		verify(this.registry).register(anyString(), eq(8080));
+		verify(this.contractReporter).reportContract(
+				eq(PolarisMcpMetadataKeys.PROTOCOL_MCP_SSE),
+				eq(Collections.emptyList()), eq(Collections.emptyList()), eq(Collections.emptyList()));
+	}
+
+	@DisplayName("contract reporting is skipped when reporter is null")
+	@Test
+	void testContractReportingSkippedWhenReporterNull() {
+		// Arrange
+		PolarisMcpServerListener listenerNoReporter = new PolarisMcpServerListener(
+				this.registry, this.properties, this.coreProperties, null, this.capabilitiesProvider);
+		when(this.event.getApplicationContext()).thenReturn(this.applicationContext);
+		when(this.applicationContext.getServerNamespace()).thenReturn(null);
+		when(this.event.getWebServer()).thenReturn(this.webServer);
+		when(this.webServer.getPort()).thenReturn(8080);
+
+		// Act
+		listenerNoReporter.onApplicationEvent(this.event);
+
+		// Assert
+		verify(this.registry).register(anyString(), eq(8080));
+		verify(this.contractReporter, never()).reportContract(any(), any(), any(), any());
+	}
+
+	@DisplayName("contract reporting failure does not affect registration")
+	@Test
+	void testContractReportingFailureDoesNotAffectRegistration() {
+		// Arrange
+		when(this.event.getApplicationContext()).thenReturn(this.applicationContext);
+		when(this.applicationContext.getServerNamespace()).thenReturn(null);
+		when(this.event.getWebServer()).thenReturn(this.webServer);
+		when(this.webServer.getPort()).thenReturn(8080);
+		when(this.capabilitiesProvider.listTools()).thenThrow(new RuntimeException("list failed"));
+
+		// Act & Assert
+		assertThatCode(() -> this.listener.onApplicationEvent(this.event)).doesNotThrowAnyException();
+		verify(this.registry).register(anyString(), eq(8080));
 	}
 
 }

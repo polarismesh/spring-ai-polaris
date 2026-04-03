@@ -47,14 +47,17 @@ import com.tencent.ai.polaris.autoconfigure.core.PolarisCoreProperties;
 import com.tencent.ai.polaris.autoconfigure.core.PolarisSDKContextAutoConfiguration;
 import com.tencent.ai.polaris.core.PolarisSDKContextManager;
 import com.tencent.ai.polaris.mcp.common.PolarisMcpMetadataKeys;
+import com.tencent.ai.polaris.mcp.server.McpServerCapabilitiesProvider;
+import com.tencent.ai.polaris.mcp.server.PolarisMcpServerContractReporter;
 import com.tencent.ai.polaris.mcp.server.PolarisMcpServerRegistry;
 import com.tencent.polaris.api.utils.CollectionUtils;
 import com.tencent.polaris.api.utils.StringUtils;
 
 /**
  * Auto-configuration for MCP Server registration with Polaris. Creates
- * {@link PolarisMcpServerRegistry} and {@link PolarisMcpServerListener} beans when Polaris
- * and MCP server registration are enabled.
+ * {@link PolarisMcpServerRegistry}, {@link PolarisMcpServerListener},
+ * {@link McpServerCapabilitiesProvider}, and {@link PolarisMcpServerContractReporter}
+ * beans when Polaris and MCP server registration are enabled.
  * <p>
  * Supports three MCP server modes:
  * <ul>
@@ -151,16 +154,134 @@ public class PolarisMcpServerAutoConfiguration {
 				mcpServerProperties, serverInfo, statelessTransport, streamableHttpProperties);
 	}
 
+	// ---- Capabilities Provider ----
+
+	@Bean
+	@ConditionalOnBean(McpSyncServer.class)
+	@Conditional(McpServerAutoConfiguration.NonStatelessServerCondition.class)
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	public McpServerCapabilitiesProvider mcpServerCapabilitiesProviderSync(McpSyncServer server) {
+		return McpServerCapabilitiesProvider.ofSync(server::listTools, server::listResources, server::listPrompts);
+	}
+
+	@Bean
+	@ConditionalOnBean(McpAsyncServer.class)
+	@Conditional(McpServerAutoConfiguration.NonStatelessServerCondition.class)
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public McpServerCapabilitiesProvider mcpServerCapabilitiesProviderAsync(McpAsyncServer server) {
+		return McpServerCapabilitiesProvider.ofAsync(server::listTools, server::listResources, server::listPrompts);
+	}
+
+	@Bean
+	@ConditionalOnBean(McpStatelessSyncServer.class)
+	@Conditional(McpServerStatelessAutoConfiguration.EnabledStatelessServerCondition.class)
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	public McpServerCapabilitiesProvider mcpServerCapabilitiesProviderStatelessSync(
+			McpStatelessSyncServer server) {
+		return McpServerCapabilitiesProvider.ofSync(server::listTools, server::listResources, server::listPrompts);
+	}
+
+	@Bean
+	@ConditionalOnBean(McpStatelessAsyncServer.class)
+	@Conditional(McpServerStatelessAutoConfiguration.EnabledStatelessServerCondition.class)
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public McpServerCapabilitiesProvider mcpServerCapabilitiesProviderStatelessAsync(
+			McpStatelessAsyncServer server) {
+		return McpServerCapabilitiesProvider.ofAsync(server::listTools, server::listResources, server::listPrompts);
+	}
+
+	// ---- Contract Reporter ----
+
+	@Bean
+	@ConditionalOnBean(McpSyncServer.class)
+	@Conditional(McpServerAutoConfiguration.NonStatelessServerCondition.class)
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	public PolarisMcpServerContractReporter polarisMcpServerContractReporterSync(
+			PolarisSDKContextManager sdkContextManager,
+			PolarisCoreProperties polarisCoreProperties,
+			PolarisMcpServerProperties polarisMcpServerProperties,
+			McpSyncServer mcpSyncServer) {
+		if (!polarisMcpServerProperties.getContract().isEnabled()) {
+			return null;
+		}
+		return buildContractReporter(sdkContextManager, polarisCoreProperties,
+				polarisMcpServerProperties, mcpSyncServer.getServerInfo());
+	}
+
+	@Bean
+	@ConditionalOnBean(McpAsyncServer.class)
+	@Conditional(McpServerAutoConfiguration.NonStatelessServerCondition.class)
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public PolarisMcpServerContractReporter polarisMcpServerContractReporterAsync(
+			PolarisSDKContextManager sdkContextManager,
+			PolarisCoreProperties polarisCoreProperties,
+			PolarisMcpServerProperties polarisMcpServerProperties,
+			McpAsyncServer mcpAsyncServer) {
+		if (!polarisMcpServerProperties.getContract().isEnabled()) {
+			return null;
+		}
+		return buildContractReporter(sdkContextManager, polarisCoreProperties,
+				polarisMcpServerProperties, mcpAsyncServer.getServerInfo());
+	}
+
+	@Bean
+	@ConditionalOnBean(McpStatelessSyncServer.class)
+	@Conditional(McpServerStatelessAutoConfiguration.EnabledStatelessServerCondition.class)
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	public PolarisMcpServerContractReporter polarisMcpServerContractReporterStatelessSync(
+			PolarisSDKContextManager sdkContextManager,
+			PolarisCoreProperties polarisCoreProperties,
+			PolarisMcpServerProperties polarisMcpServerProperties,
+			McpStatelessSyncServer mcpStatelessSyncServer) {
+		if (!polarisMcpServerProperties.getContract().isEnabled()) {
+			return null;
+		}
+		return buildContractReporter(sdkContextManager, polarisCoreProperties,
+				polarisMcpServerProperties, mcpStatelessSyncServer.getServerInfo());
+	}
+
+	@Bean
+	@ConditionalOnBean(McpStatelessAsyncServer.class)
+	@Conditional(McpServerStatelessAutoConfiguration.EnabledStatelessServerCondition.class)
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public PolarisMcpServerContractReporter polarisMcpServerContractReporterStatelessAsync(
+			PolarisSDKContextManager sdkContextManager,
+			PolarisCoreProperties polarisCoreProperties,
+			PolarisMcpServerProperties polarisMcpServerProperties,
+			McpStatelessAsyncServer mcpStatelessAsyncServer) {
+		if (!polarisMcpServerProperties.getContract().isEnabled()) {
+			return null;
+		}
+		return buildContractReporter(sdkContextManager, polarisCoreProperties,
+				polarisMcpServerProperties, mcpStatelessAsyncServer.getServerInfo());
+	}
+
 	// ---- Listener ----
 
 	@Bean
 	@ConditionalOnBean(PolarisMcpServerRegistry.class)
 	public PolarisMcpServerListener polarisMcpServerListener(PolarisMcpServerRegistry registry,
-			PolarisMcpServerProperties properties, PolarisCoreProperties coreProperties) {
-		return new PolarisMcpServerListener(registry, properties, coreProperties);
+			PolarisMcpServerProperties properties, PolarisCoreProperties coreProperties,
+			ObjectProvider<PolarisMcpServerContractReporter> contractReporter,
+			ObjectProvider<McpServerCapabilitiesProvider> capabilitiesProvider) {
+		return new PolarisMcpServerListener(registry, properties, coreProperties,
+				contractReporter.getIfAvailable(), capabilitiesProvider.getIfAvailable());
 	}
 
 	// ---- Private helpers ----
+
+	private PolarisMcpServerContractReporter buildContractReporter(PolarisSDKContextManager sdkContextManager,
+			PolarisCoreProperties polarisCoreProperties,
+			PolarisMcpServerProperties polarisMcpServerProperties,
+			McpSchema.Implementation serverInfo) {
+		String serviceName = resolveServiceName(polarisMcpServerProperties);
+		return new PolarisMcpServerContractReporter(sdkContextManager,
+				polarisCoreProperties.getNamespace(), serviceName, serverInfo.version());
+	}
 
 	private PolarisMcpServerRegistry buildRegistry(PolarisSDKContextManager sdkContextManager,
 			PolarisCoreProperties polarisCoreProperties,

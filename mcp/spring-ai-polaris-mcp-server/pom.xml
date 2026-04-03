@@ -37,5 +37,13 @@
             <groupId>com.tencent.ai.polaris</groupId>
             <artifactId>spring-ai-polaris-mcp-common</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.modelcontextprotocol.sdk</groupId>
+            <artifactId>mcp-core</artifactId>
+        </dependency>
     </dependencies>
 </project>

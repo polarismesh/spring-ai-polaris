@@ -84,6 +84,42 @@ class PolarisMcpServerPropertiesTest {
 		assertThat(result).contains("strictCompatible=");
 		assertThat(result).contains("host=");
 		assertThat(result).contains("port=");
+		assertThat(result).contains("contract=");
+	}
+
+	@DisplayName("contract default values are set correctly")
+	@Test
+	void testContractDefaultValues() {
+		// Arrange (defaults set in constructor)
+
+		// Act & Assert
+		assertThat(this.properties.getContract()).isNotNull();
+		assertThat(this.properties.getContract().isEnabled()).isTrue();
+	}
+
+	@DisplayName("contract custom values are set correctly via setters")
+	@Test
+	void testContractCustomValues() {
+		// Arrange
+		PolarisMcpServerProperties.Contract contract = new PolarisMcpServerProperties.Contract();
+		contract.setEnabled(false);
+		this.properties.setContract(contract);
+
+		// Act & Assert
+		assertThat(this.properties.getContract().isEnabled()).isFalse();
+	}
+
+	@DisplayName("contract toString contains all fields")
+	@Test
+	void testContractToString() {
+		// Arrange (use defaults)
+
+		// Act
+		String result = this.properties.getContract().toString();
+
+		// Assert
+		assertThat(result).contains("Contract");
+		assertThat(result).contains("enabled=");
 	}
 
 }

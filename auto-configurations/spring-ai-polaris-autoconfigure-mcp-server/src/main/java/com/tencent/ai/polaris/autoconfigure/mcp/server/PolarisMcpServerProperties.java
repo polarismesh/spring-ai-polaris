@@ -54,6 +54,11 @@ public class PolarisMcpServerProperties {
 	 */
 	private int port = -1;
 
+	/**
+	 * Contract reporting configuration.
+	 */
+	private Contract contract = new Contract();
+
 	public boolean isEnabled() {
 		return this.enabled;
 	}
@@ -94,6 +99,14 @@ public class PolarisMcpServerProperties {
 		this.port = port;
 	}
 
+	public Contract getContract() {
+		return this.contract;
+	}
+
+	public void setContract(Contract contract) {
+		this.contract = contract;
+	}
+
 	@Override
 	public String toString() {
 		return "PolarisMcpServerProperties{"
@@ -102,7 +115,35 @@ public class PolarisMcpServerProperties {
 				+ ", strictCompatible=" + this.strictCompatible
 				+ ", host='" + this.host + '\''
 				+ ", port=" + this.port
+				+ ", contract=" + this.contract
 				+ '}';
+	}
+
+	/**
+	 * Service contract reporting properties.
+	 */
+	public static class Contract {
+
+		/**
+		 * Whether to enable service contract reporting.
+		 */
+		private boolean enabled = true;
+
+		public boolean isEnabled() {
+			return this.enabled;
+		}
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
+
+		@Override
+		public String toString() {
+			return "Contract{"
+					+ "enabled=" + this.enabled
+					+ '}';
+		}
+
 	}
 
 }
