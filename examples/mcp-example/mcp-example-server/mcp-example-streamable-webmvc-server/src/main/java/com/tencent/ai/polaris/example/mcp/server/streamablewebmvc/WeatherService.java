@@ -32,8 +32,6 @@ import org.springframework.stereotype.Service;
 
 import com.tencent.polaris.api.utils.StringUtils;
 
-import com.tencent.polaris.api.utils.StringUtils;
-
 /**
  * Example service exposing weather tools, resources and prompts via MCP.
  *
