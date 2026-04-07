@@ -43,7 +43,7 @@ public abstract class AbstractPolarisMcpClient<C> {
 	/** Return code indicating a failed call. */
 	protected static final int RET_CODE_FAIL = -1;
 
-	private final C client;
+	private final C delegate;
 
 	private final Node node;
 
@@ -53,9 +53,9 @@ public abstract class AbstractPolarisMcpClient<C> {
 
 	private final PolarisReporter polarisReporter;
 
-	protected AbstractPolarisMcpClient(C client, Node node, String namespace, String serverName,
+	protected AbstractPolarisMcpClient(C delegate, Node node, String namespace, String serverName,
 			PolarisReporter polarisReporter) {
-		this.client = client;
+		this.delegate = delegate;
 		this.node = node;
 		this.namespace = namespace;
 		this.serverName = serverName;
@@ -63,11 +63,11 @@ public abstract class AbstractPolarisMcpClient<C> {
 	}
 
 	/**
-	 * Returns the underlying MCP client.
-	 * @return the client
+	 * Returns the underlying MCP client delegate.
+	 * @return the delegate
 	 */
-	public C getClient() {
-		return this.client;
+	public C getDelegate() {
+		return this.delegate;
 	}
 
 	/**

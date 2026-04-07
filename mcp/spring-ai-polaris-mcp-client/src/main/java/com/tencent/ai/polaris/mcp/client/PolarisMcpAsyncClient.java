@@ -46,7 +46,7 @@ public class PolarisMcpAsyncClient extends AbstractPolarisMcpClient<McpAsyncClie
 	public Mono<McpSchema.CallToolResult> callTool(McpSchema.CallToolRequest callToolRequest) {
 		return Mono.defer(() -> {
 			long startTime = System.currentTimeMillis();
-			return getClient().callTool(callToolRequest).doOnNext(result -> {
+			return getDelegate().callTool(callToolRequest).doOnNext(result -> {
 				long delay = System.currentTimeMillis() - startTime;
 				RetStatus retStatus = isErrorResult(result) ? RetStatus.RetFail : RetStatus.RetSuccess;
 				reportCall(callToolRequest.name(), delay, retStatus);
@@ -62,17 +62,17 @@ public class PolarisMcpAsyncClient extends AbstractPolarisMcpClient<McpAsyncClie
 	 * @return a {@link Mono} emitting the list tools result
 	 */
 	public Mono<McpSchema.ListToolsResult> listTools() {
-		return getClient().listTools();
+		return getDelegate().listTools();
 	}
 
 	@Override
 	protected void closeClient() {
-		getClient().close();
+		getDelegate().close();
 	}
 
 	@Override
 	protected void closeClientGracefully() {
-		getClient().closeGracefully().block();
+		getDelegate().closeGracefully().block();
 	}
 
 }

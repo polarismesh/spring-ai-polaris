@@ -67,11 +67,11 @@ class PolarisMcpAsyncClientTest {
 				this.reporter);
 	}
 
-	@DisplayName("getClient returns the underlying MCP client")
+	@DisplayName("getDelegate returns the underlying MCP client")
 	@Test
-	void testGetClientReturnsUnderlyingClient() {
+	void testGetDelegateReturnsUnderlyingClient() {
 		// Arrange & Act & Assert
-		assertThat(this.client.getClient()).isSameAs(this.mcpClient);
+		assertThat(this.client.getDelegate()).isSameAs(this.mcpClient);
 	}
 
 	@DisplayName("callTool reports success to Polaris on successful call")

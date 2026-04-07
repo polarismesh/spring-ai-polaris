@@ -46,7 +46,7 @@ public class PolarisMcpSyncClient extends AbstractPolarisMcpClient<McpSyncClient
 		long startTime = System.currentTimeMillis();
 		RetStatus retStatus = RetStatus.RetSuccess;
 		try {
-			McpSchema.CallToolResult result = getClient().callTool(callToolRequest);
+			McpSchema.CallToolResult result = getDelegate().callTool(callToolRequest);
 			if (isErrorResult(result)) {
 				retStatus = RetStatus.RetFail;
 			}
@@ -67,17 +67,17 @@ public class PolarisMcpSyncClient extends AbstractPolarisMcpClient<McpSyncClient
 	 * @return the list tools result
 	 */
 	public McpSchema.ListToolsResult listTools() {
-		return getClient().listTools();
+		return getDelegate().listTools();
 	}
 
 	@Override
 	protected void closeClient() {
-		getClient().close();
+		getDelegate().close();
 	}
 
 	@Override
 	protected void closeClientGracefully() {
-		getClient().closeGracefully();
+		getDelegate().closeGracefully();
 	}
 
 }
