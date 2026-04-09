@@ -32,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.tencent.ai.polaris.core.PolarisSDKContextManager;
 import com.tencent.polaris.api.core.ProviderAPI;
+import com.tencent.polaris.api.plugin.server.InterfaceDescriptor;
 import com.tencent.polaris.api.plugin.server.ReportServiceContractRequest;
 import com.tencent.polaris.api.plugin.server.ReportServiceContractResponse;
 import com.tencent.polaris.api.plugin.server.ServiceFeature;
@@ -61,6 +62,8 @@ class PolarisMcpServerContractReporterTest {
 	private static final String TEST_PROTOCOL = "mcp-sse";
 
 	private static final String TEST_VERSION = "1.0.0";
+
+	private static final String TEST_ENDPOINT_PATH = "/sse";
 
 	@Mock
 	private PolarisSDKContextManager sdkContextManager;
@@ -123,7 +126,8 @@ class PolarisMcpServerContractReporterTest {
 	void testReportContractThrowsOnNullProtocol() {
 		// Arrange & Act & Assert
 		assertThatThrownBy(() -> this.reporter.reportContract(
-				null, Collections.emptyList(), Collections.emptyList(), Collections.emptyList()))
+				null, TEST_ENDPOINT_PATH, Collections.emptyList(), Collections.emptyList(),
+				Collections.emptyList(), Collections.emptyList(), Collections.emptyList()))
 			.isInstanceOf(NullPointerException.class)
 			.hasMessageContaining("protocol");
 	}
@@ -142,7 +146,9 @@ class PolarisMcpServerContractReporterTest {
 			.build();
 
 		// Act
-		this.reporter.reportContract(TEST_PROTOCOL, List.of(tool), Collections.emptyList(), Collections.emptyList());
+		this.reporter.reportContract(TEST_PROTOCOL, TEST_ENDPOINT_PATH,
+				List.of(tool), Collections.emptyList(), Collections.emptyList(),
+				Collections.emptyList(), Collections.emptyList());
 
 		// Assert
 		verify(this.providerAPI).reportServiceContract(this.requestCaptor.capture());
@@ -160,6 +166,8 @@ class PolarisMcpServerContractReporterTest {
 			.isEqualTo(ServiceContractProto.ServiceFeatureType.Service_Feature_Type_MCP_Tool);
 		assertThat(features.get(0).getStatus())
 			.isEqualTo(ServiceContractProto.ServiceFeatureStatus.Service_Feature_Status_Enabled);
+		assertThat(features.get(0).getContent()).contains("get_weather");
+		assertThat(features.get(0).getContent()).contains("Get weather info");
 	}
 
 	@DisplayName("reportContract reports resources as MCP_Resource features")
@@ -178,7 +186,9 @@ class PolarisMcpServerContractReporterTest {
 			.build();
 
 		// Act
-		this.reporter.reportContract(TEST_PROTOCOL, Collections.emptyList(), List.of(resource), Collections.emptyList());
+		this.reporter.reportContract(TEST_PROTOCOL, TEST_ENDPOINT_PATH,
+				Collections.emptyList(), List.of(resource),
+				Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
 
 		// Assert
 		verify(this.providerAPI).reportServiceContract(this.requestCaptor.capture());
@@ -189,6 +199,8 @@ class PolarisMcpServerContractReporterTest {
 			.isEqualTo(ServiceContractProto.ServiceFeatureType.Service_Feature_Type_MCP_Resource);
 		assertThat(features.get(0).getContent()).contains("file:///data.csv");
 		assertThat(features.get(0).getContent()).contains("text/csv");
+		assertThat(features.get(0).getContent()).contains("data");
+		assertThat(features.get(0).getContent()).contains("Data file");
 	}
 
 	@DisplayName("reportContract reports prompts as MCP_Prompt features")
@@ -203,7 +215,9 @@ class PolarisMcpServerContractReporterTest {
 				List.of(new McpSchema.PromptArgument("name", "User name", true)));
 
 		// Act
-		this.reporter.reportContract(TEST_PROTOCOL, Collections.emptyList(), Collections.emptyList(), List.of(prompt));
+		this.reporter.reportContract(TEST_PROTOCOL, TEST_ENDPOINT_PATH,
+				Collections.emptyList(), Collections.emptyList(),
+				List.of(prompt), Collections.emptyList(), Collections.emptyList());
 
 		// Assert
 		verify(this.providerAPI).reportServiceContract(this.requestCaptor.capture());
@@ -213,9 +227,11 @@ class PolarisMcpServerContractReporterTest {
 		assertThat(features.get(0).getType())
 			.isEqualTo(ServiceContractProto.ServiceFeatureType.Service_Feature_Type_MCP_Prompt);
 		assertThat(features.get(0).getContent()).contains("name");
+		assertThat(features.get(0).getContent()).contains("greeting");
+		assertThat(features.get(0).getContent()).contains("A greeting prompt");
 	}
 
-	@DisplayName("reportContract with all empty lists reports empty features")
+	@DisplayName("reportContract with all empty lists reports empty features and descriptors")
 	@Test
 	void testReportContractWithEmptyLists() {
 		// Arrange
@@ -224,11 +240,14 @@ class PolarisMcpServerContractReporterTest {
 		when(this.providerAPI.reportServiceContract(any())).thenReturn(response);
 
 		// Act
-		this.reporter.reportContract(TEST_PROTOCOL, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+		this.reporter.reportContract(TEST_PROTOCOL, TEST_ENDPOINT_PATH,
+				Collections.emptyList(), Collections.emptyList(),
+				Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
 
 		// Assert
 		verify(this.providerAPI).reportServiceContract(this.requestCaptor.capture());
 		assertThat(this.requestCaptor.getValue().getServiceFeatures()).isEmpty();
+		assertThat(this.requestCaptor.getValue().getInterfaceDescriptors()).isEmpty();
 	}
 
 	@DisplayName("reportContract catches exception from ProviderAPI")
@@ -241,7 +260,8 @@ class PolarisMcpServerContractReporterTest {
 
 		// Act & Assert
 		assertThatCode(() -> this.reporter.reportContract(
-				TEST_PROTOCOL, Collections.emptyList(), Collections.emptyList(), Collections.emptyList()))
+				TEST_PROTOCOL, TEST_ENDPOINT_PATH, Collections.emptyList(), Collections.emptyList(),
+				Collections.emptyList(), Collections.emptyList(), Collections.emptyList()))
 			.doesNotThrowAnyException();
 	}
 
@@ -259,7 +279,9 @@ class PolarisMcpServerContractReporterTest {
 		McpSchema.Prompt prompt = new McpSchema.Prompt("prompt1", "Prompt 1", Collections.emptyList());
 
 		// Act
-		this.reporter.reportContract(TEST_PROTOCOL, List.of(tool), List.of(resource), List.of(prompt));
+		this.reporter.reportContract(TEST_PROTOCOL, TEST_ENDPOINT_PATH,
+				List.of(tool), List.of(resource), List.of(prompt),
+				Collections.emptyList(), Collections.emptyList());
 
 		// Assert
 		verify(this.providerAPI).reportServiceContract(this.requestCaptor.capture());
@@ -271,6 +293,61 @@ class PolarisMcpServerContractReporterTest {
 			.isEqualTo(ServiceContractProto.ServiceFeatureType.Service_Feature_Type_MCP_Resource);
 		assertThat(features.get(2).getType())
 			.isEqualTo(ServiceContractProto.ServiceFeatureType.Service_Feature_Type_MCP_Prompt);
+	}
+
+	@DisplayName("reportContract builds interface descriptors from handler methods")
+	@Test
+	void testReportContractBuildsInterfaceDescriptors() {
+		// Arrange
+		when(this.sdkContextManager.getProviderAPI()).thenReturn(this.providerAPI);
+		ReportServiceContractResponse response = mock(ReportServiceContractResponse.class);
+		when(this.providerAPI.reportServiceContract(any())).thenReturn(response);
+
+		List<String> requestHandlers = List.of(
+				McpSchema.METHOD_PING, McpSchema.METHOD_TOOLS_LIST, McpSchema.METHOD_TOOLS_CALL);
+		List<String> notificationHandlers = List.of(
+				McpSchema.METHOD_NOTIFICATION_INITIALIZED,
+				McpSchema.METHOD_NOTIFICATION_ROOTS_LIST_CHANGED);
+
+		// Act
+		this.reporter.reportContract(TEST_PROTOCOL, TEST_ENDPOINT_PATH,
+				Collections.emptyList(), Collections.emptyList(),
+				Collections.emptyList(), requestHandlers, notificationHandlers);
+
+		// Assert
+		verify(this.providerAPI).reportServiceContract(this.requestCaptor.capture());
+		List<InterfaceDescriptor> descriptors = this.requestCaptor.getValue().getInterfaceDescriptors();
+		assertThat(descriptors).hasSize(5);
+		assertThat(descriptors.get(0).getMethod()).isEqualTo(McpSchema.METHOD_PING);
+		assertThat(descriptors.get(1).getMethod()).isEqualTo(McpSchema.METHOD_TOOLS_LIST);
+		assertThat(descriptors.get(2).getMethod()).isEqualTo(McpSchema.METHOD_TOOLS_CALL);
+		assertThat(descriptors.get(3).getMethod()).isEqualTo(McpSchema.METHOD_NOTIFICATION_INITIALIZED);
+		assertThat(descriptors.get(4).getMethod()).isEqualTo(McpSchema.METHOD_NOTIFICATION_ROOTS_LIST_CHANGED);
+		// path should be set to endpoint path
+		assertThat(descriptors.get(0).getPath()).isEqualTo(TEST_ENDPOINT_PATH);
+		assertThat(descriptors.get(3).getPath()).isEqualTo(TEST_ENDPOINT_PATH);
+		// id, name, content should be null
+		assertThat(descriptors.get(0).getId()).isNull();
+		assertThat(descriptors.get(0).getName()).isNull();
+		assertThat(descriptors.get(0).getContent()).isNull();
+	}
+
+	@DisplayName("reportContract with null handler method lists treats them as empty")
+	@Test
+	void testReportContractWithNullHandlerMethods() {
+		// Arrange
+		when(this.sdkContextManager.getProviderAPI()).thenReturn(this.providerAPI);
+		ReportServiceContractResponse response = mock(ReportServiceContractResponse.class);
+		when(this.providerAPI.reportServiceContract(any())).thenReturn(response);
+
+		// Act
+		this.reporter.reportContract(TEST_PROTOCOL, TEST_ENDPOINT_PATH,
+				Collections.emptyList(), Collections.emptyList(),
+				Collections.emptyList(), null, null);
+
+		// Assert
+		verify(this.providerAPI).reportServiceContract(this.requestCaptor.capture());
+		assertThat(this.requestCaptor.getValue().getInterfaceDescriptors()).isEmpty();
 	}
 
 }

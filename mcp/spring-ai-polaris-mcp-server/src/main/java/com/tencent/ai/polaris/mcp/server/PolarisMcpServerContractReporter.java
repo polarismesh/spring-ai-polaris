@@ -21,18 +21,18 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.tencent.ai.polaris.core.PolarisSDKContextManager;
+import com.tencent.polaris.api.plugin.server.InterfaceDescriptor;
 import com.tencent.polaris.api.plugin.server.ReportServiceContractRequest;
 import com.tencent.polaris.api.plugin.server.ServiceFeature;
-import com.tencent.polaris.api.utils.StringUtils;
 import com.tencent.polaris.specification.api.v1.service.manage.ServiceContractProto;
 
 /**
@@ -76,18 +76,28 @@ public final class PolarisMcpServerContractReporter {
 	}
 
 	/**
-	 * Report the service contract with service features.
+	 * Report the service contract with service features and interface descriptors.
 	 * @param protocol the contract protocol (e.g. "mcp-sse", "mcp-streamable-http")
+	 * @param endpointPath the MCP server endpoint path (may be {@code null} for stdio)
 	 * @param tools the registered tools (may be empty or null)
 	 * @param resources the registered resources (may be empty or null)
 	 * @param prompts the registered prompts (may be empty or null)
+	 * @param requestHandlerMethods the request handler method names (may be empty or
+	 * null)
+	 * @param notificationHandlerMethods the notification handler method names (may be
+	 * empty or null)
 	 */
-	public void reportContract(String protocol, List<McpSchema.Tool> tools, List<McpSchema.Resource> resources,
-			List<McpSchema.Prompt> prompts) {
+	public void reportContract(String protocol, String endpointPath, List<McpSchema.Tool> tools,
+			List<McpSchema.Resource> resources, List<McpSchema.Prompt> prompts,
+			List<String> requestHandlerMethods, List<String> notificationHandlerMethods) {
 		Objects.requireNonNull(protocol, "protocol must not be null");
 		List<McpSchema.Tool> safeTools = (tools != null) ? tools : Collections.emptyList();
 		List<McpSchema.Resource> safeResources = (resources != null) ? resources : Collections.emptyList();
 		List<McpSchema.Prompt> safePrompts = (prompts != null) ? prompts : Collections.emptyList();
+		List<String> safeRequestHandlers = (requestHandlerMethods != null)
+				? requestHandlerMethods : Collections.emptyList();
+		List<String> safeNotificationHandlers = (notificationHandlerMethods != null)
+				? notificationHandlerMethods : Collections.emptyList();
 
 		try {
 			ReportServiceContractRequest request = new ReportServiceContractRequest();
@@ -98,18 +108,24 @@ public final class PolarisMcpServerContractReporter {
 			request.setVersion(this.version);
 
 			request.setServiceFeatures(buildServiceFeatures(safeTools, safeResources, safePrompts));
+			request.setInterfaceDescriptors(
+					buildInterfaceDescriptors(endpointPath, safeRequestHandlers, safeNotificationHandlers));
 
 			if (logger.isDebugEnabled()) {
-				logger.debug("Reporting MCP server contract: tools={}, resources={}, prompts={}",
-						safeTools, safeResources, safePrompts);
+				logger.debug("Reporting MCP server contract: tools={}, resources={}, prompts={},"
+						+ " requestHandlers={}, notificationHandlers={}",
+						safeTools, safeResources, safePrompts,
+						safeRequestHandlers, safeNotificationHandlers);
 			}
 
 			this.sdkContextManager.getProviderAPI().reportServiceContract(request);
 
 			logger.info(
 					"MCP server contract reported to Polaris: namespace={}, service={},"
-							+ " tools={}, resources={}, prompts={}",
-					this.namespace, this.serviceName, safeTools.size(), safeResources.size(), safePrompts.size());
+							+ " tools={}, resources={}, prompts={},"
+							+ " requestHandlers={}, notificationHandlers={}",
+					this.namespace, this.serviceName, safeTools.size(), safeResources.size(), safePrompts.size(),
+					safeRequestHandlers.size(), safeNotificationHandlers.size());
 		}
 		catch (Exception ex) {
 			logger.error("Failed to report MCP server contract to Polaris.", ex);
@@ -155,33 +171,50 @@ public final class PolarisMcpServerContractReporter {
 
 	private String serializeToolContent(McpSchema.Tool tool) {
 		try {
-			return OBJECT_MAPPER.writeValueAsString(tool.inputSchema());
+			return OBJECT_MAPPER.writeValueAsString(tool);
 		}
 		catch (JsonProcessingException ex) {
-			logger.warn("Failed to serialize tool inputSchema for tool={}", tool.name(), ex);
+			logger.warn("Failed to serialize tool for tool={}", tool.name(), ex);
 			return "{}";
 		}
 	}
 
 	private String serializeResourceContent(McpSchema.Resource resource) {
-		ObjectNode node = OBJECT_MAPPER.createObjectNode();
-		if (StringUtils.isNotBlank(resource.uri())) {
-			node.put("uri", resource.uri());
+		try {
+			return OBJECT_MAPPER.writeValueAsString(resource);
 		}
-		if (StringUtils.isNotBlank(resource.mimeType())) {
-			node.put("mimeType", resource.mimeType());
+		catch (JsonProcessingException ex) {
+			logger.warn("Failed to serialize resource for resource={}", resource.name(), ex);
+			return "{}";
 		}
-		return node.toString();
 	}
 
 	private String serializePromptContent(McpSchema.Prompt prompt) {
 		try {
-			return OBJECT_MAPPER.writeValueAsString(prompt.arguments());
+			return OBJECT_MAPPER.writeValueAsString(prompt);
 		}
 		catch (JsonProcessingException ex) {
-			logger.warn("Failed to serialize prompt arguments for prompt={}", prompt.name(), ex);
-			return "[]";
+			logger.warn("Failed to serialize prompt for prompt={}", prompt.name(), ex);
+			return "{}";
 		}
+	}
+
+	private List<InterfaceDescriptor> buildInterfaceDescriptors(String endpointPath,
+			List<String> requestHandlerMethods, List<String> notificationHandlerMethods) {
+		int totalSize = requestHandlerMethods.size() + notificationHandlerMethods.size();
+		List<InterfaceDescriptor> descriptors = new ArrayList<>(totalSize);
+
+		Stream.concat(requestHandlerMethods.stream(), notificationHandlerMethods.stream())
+			.forEach(method -> descriptors.add(buildDescriptor(method, endpointPath)));
+
+		return descriptors;
+	}
+
+	private InterfaceDescriptor buildDescriptor(String method, String endpointPath) {
+		InterfaceDescriptor descriptor = new InterfaceDescriptor();
+		descriptor.setMethod(method);
+		descriptor.setPath(endpointPath);
+		return descriptor;
 	}
 
 }

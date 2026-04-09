@@ -18,7 +18,9 @@
 package com.tencent.ai.polaris.autoconfigure.mcp.server;
 
 import java.util.Collections;
+import java.util.List;
 
+import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -85,6 +87,7 @@ class PolarisMcpServerListenerTest {
 		this.properties = new PolarisMcpServerProperties();
 		this.coreProperties = new PolarisCoreProperties();
 		lenient().when(this.registry.getProtocol()).thenReturn(PolarisMcpMetadataKeys.PROTOCOL_MCP_SSE);
+		lenient().when(this.registry.getEndpointPath()).thenReturn("/sse");
 		this.listener = new PolarisMcpServerListener(this.registry, this.properties, this.coreProperties,
 				this.contractReporter, this.capabilitiesProvider);
 	}
@@ -100,6 +103,8 @@ class PolarisMcpServerListenerTest {
 		lenient().when(this.capabilitiesProvider.listTools()).thenReturn(Collections.emptyList());
 		lenient().when(this.capabilitiesProvider.listResources()).thenReturn(Collections.emptyList());
 		lenient().when(this.capabilitiesProvider.listPrompts()).thenReturn(Collections.emptyList());
+		lenient().when(this.capabilitiesProvider.listRequestHandlerMethods()).thenReturn(Collections.emptyList());
+		lenient().when(this.capabilitiesProvider.listNotificationHandlerMethods()).thenReturn(Collections.emptyList());
 
 		// Act
 		this.listener.onApplicationEvent(this.event);
@@ -161,6 +166,8 @@ class PolarisMcpServerListenerTest {
 		lenient().when(this.capabilitiesProvider.listTools()).thenReturn(Collections.emptyList());
 		lenient().when(this.capabilitiesProvider.listResources()).thenReturn(Collections.emptyList());
 		lenient().when(this.capabilitiesProvider.listPrompts()).thenReturn(Collections.emptyList());
+		lenient().when(this.capabilitiesProvider.listRequestHandlerMethods()).thenReturn(Collections.emptyList());
+		lenient().when(this.capabilitiesProvider.listNotificationHandlerMethods()).thenReturn(Collections.emptyList());
 
 		// Act
 		this.listener.onApplicationEvent(this.event);
@@ -179,6 +186,8 @@ class PolarisMcpServerListenerTest {
 		lenient().when(this.capabilitiesProvider.listTools()).thenReturn(Collections.emptyList());
 		lenient().when(this.capabilitiesProvider.listResources()).thenReturn(Collections.emptyList());
 		lenient().when(this.capabilitiesProvider.listPrompts()).thenReturn(Collections.emptyList());
+		lenient().when(this.capabilitiesProvider.listRequestHandlerMethods()).thenReturn(Collections.emptyList());
+		lenient().when(this.capabilitiesProvider.listNotificationHandlerMethods()).thenReturn(Collections.emptyList());
 
 		// Act
 		this.listener.onApplicationEvent(this.event);
@@ -198,6 +207,8 @@ class PolarisMcpServerListenerTest {
 		lenient().when(this.capabilitiesProvider.listTools()).thenReturn(Collections.emptyList());
 		lenient().when(this.capabilitiesProvider.listResources()).thenReturn(Collections.emptyList());
 		lenient().when(this.capabilitiesProvider.listPrompts()).thenReturn(Collections.emptyList());
+		lenient().when(this.capabilitiesProvider.listRequestHandlerMethods()).thenReturn(Collections.emptyList());
+		lenient().when(this.capabilitiesProvider.listNotificationHandlerMethods()).thenReturn(Collections.emptyList());
 
 		// Act
 		this.listener.onApplicationEvent(this.event);
@@ -217,6 +228,10 @@ class PolarisMcpServerListenerTest {
 		when(this.capabilitiesProvider.listTools()).thenReturn(Collections.emptyList());
 		when(this.capabilitiesProvider.listResources()).thenReturn(Collections.emptyList());
 		when(this.capabilitiesProvider.listPrompts()).thenReturn(Collections.emptyList());
+		List<String> requestHandlers = List.of(McpSchema.METHOD_PING, McpSchema.METHOD_TOOLS_LIST);
+		List<String> notificationHandlers = List.of(McpSchema.METHOD_NOTIFICATION_INITIALIZED);
+		when(this.capabilitiesProvider.listRequestHandlerMethods()).thenReturn(requestHandlers);
+		when(this.capabilitiesProvider.listNotificationHandlerMethods()).thenReturn(notificationHandlers);
 
 		// Act
 		this.listener.onApplicationEvent(this.event);
@@ -224,8 +239,9 @@ class PolarisMcpServerListenerTest {
 		// Assert
 		verify(this.registry).register(anyString(), eq(8080));
 		verify(this.contractReporter).reportContract(
-				eq(PolarisMcpMetadataKeys.PROTOCOL_MCP_SSE),
-				eq(Collections.emptyList()), eq(Collections.emptyList()), eq(Collections.emptyList()));
+				eq(PolarisMcpMetadataKeys.PROTOCOL_MCP_SSE), eq("/sse"),
+				eq(Collections.emptyList()), eq(Collections.emptyList()), eq(Collections.emptyList()),
+				eq(requestHandlers), eq(notificationHandlers));
 	}
 
 	@DisplayName("contract reporting is skipped when reporter is null")
@@ -244,7 +260,7 @@ class PolarisMcpServerListenerTest {
 
 		// Assert
 		verify(this.registry).register(anyString(), eq(8080));
-		verify(this.contractReporter, never()).reportContract(any(), any(), any(), any());
+		verify(this.contractReporter, never()).reportContract(any(), any(), any(), any(), any(), any(), any());
 	}
 
 	@DisplayName("contract reporting failure does not affect registration")

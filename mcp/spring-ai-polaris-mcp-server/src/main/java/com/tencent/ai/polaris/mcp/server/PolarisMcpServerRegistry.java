@@ -99,6 +99,14 @@ public final class PolarisMcpServerRegistry {
 	}
 
 	/**
+	 * Return the endpoint path of this registry.
+	 * @return the endpoint path, or {@code null} if not set (e.g. for stdio transport)
+	 */
+	public String getEndpointPath() {
+		return this.endpointPath;
+	}
+
+	/**
 	 * Register this MCP server instance with Polaris.
 	 * @param host the host address of this server
 	 * @param port the port of this server

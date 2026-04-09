@@ -54,6 +54,10 @@ import static org.mockito.Mockito.when;
 @DisplayName("PolarisMcpServerAutoConfiguration")
 class PolarisMcpServerAutoConfigurationTest {
 
+	private static final McpSchema.ServerCapabilities TEST_CAPABILITIES = McpSchema.ServerCapabilities.builder()
+		.tools(true)
+		.build();
+
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(PolarisMcpServerAutoConfiguration.class))
 		.withPropertyValues("spring.application.name=test-service");
@@ -108,6 +112,7 @@ class PolarisMcpServerAutoConfigurationTest {
 		// Arrange
 		McpSyncServer mcpSyncServer = mock(McpSyncServer.class);
 		when(mcpSyncServer.getServerInfo()).thenReturn(new McpSchema.Implementation("test-server", null, "2025-03-26"));
+		when(mcpSyncServer.getServerCapabilities()).thenReturn(TEST_CAPABILITIES);
 
 		McpServerProperties mcpServerProperties = new McpServerProperties();
 		mcpServerProperties.setProtocol(McpServerProperties.ServerProtocol.SSE);
@@ -135,6 +140,7 @@ class PolarisMcpServerAutoConfigurationTest {
 		// Arrange
 		McpSyncServer mcpSyncServer = mock(McpSyncServer.class);
 		when(mcpSyncServer.getServerInfo()).thenReturn(new McpSchema.Implementation("test-server", null, "2025-03-26"));
+		when(mcpSyncServer.getServerCapabilities()).thenReturn(TEST_CAPABILITIES);
 
 		McpServerProperties mcpServerProperties = new McpServerProperties();
 		mcpServerProperties.setProtocol(McpServerProperties.ServerProtocol.STREAMABLE);
@@ -164,6 +170,7 @@ class PolarisMcpServerAutoConfigurationTest {
 		McpAsyncServer mcpAsyncServer = mock(McpAsyncServer.class);
 		when(mcpAsyncServer.getServerInfo())
 			.thenReturn(new McpSchema.Implementation("test-server", null, "2025-03-26"));
+		when(mcpAsyncServer.getServerCapabilities()).thenReturn(TEST_CAPABILITIES);
 
 		McpServerProperties mcpServerProperties = new McpServerProperties();
 		mcpServerProperties.setProtocol(McpServerProperties.ServerProtocol.SSE);
@@ -193,6 +200,7 @@ class PolarisMcpServerAutoConfigurationTest {
 		McpStatelessSyncServer mcpStatelessSyncServer = mock(McpStatelessSyncServer.class);
 		when(mcpStatelessSyncServer.getServerInfo())
 			.thenReturn(new McpSchema.Implementation("test-server", null, "2025-03-26"));
+		when(mcpStatelessSyncServer.getServerCapabilities()).thenReturn(TEST_CAPABILITIES);
 
 		McpServerProperties mcpServerProperties = new McpServerProperties();
 		mcpServerProperties.setProtocol(McpServerProperties.ServerProtocol.STATELESS);
@@ -222,6 +230,7 @@ class PolarisMcpServerAutoConfigurationTest {
 		McpStatelessAsyncServer mcpStatelessAsyncServer = mock(McpStatelessAsyncServer.class);
 		when(mcpStatelessAsyncServer.getServerInfo())
 			.thenReturn(new McpSchema.Implementation("test-server", null, "2025-03-26"));
+		when(mcpStatelessAsyncServer.getServerCapabilities()).thenReturn(TEST_CAPABILITIES);
 
 		McpServerProperties mcpServerProperties = new McpServerProperties();
 		mcpServerProperties.setProtocol(McpServerProperties.ServerProtocol.STATELESS);
@@ -250,6 +259,7 @@ class PolarisMcpServerAutoConfigurationTest {
 		// Arrange
 		McpSyncServer mcpSyncServer = mock(McpSyncServer.class);
 		when(mcpSyncServer.getServerInfo()).thenReturn(new McpSchema.Implementation("test-server", null, "2025-03-26"));
+		when(mcpSyncServer.getServerCapabilities()).thenReturn(TEST_CAPABILITIES);
 
 		McpServerProperties mcpServerProperties = new McpServerProperties();
 		mcpServerProperties.setStdio(true);
@@ -278,6 +288,7 @@ class PolarisMcpServerAutoConfigurationTest {
 		McpAsyncServer mcpAsyncServer = mock(McpAsyncServer.class);
 		when(mcpAsyncServer.getServerInfo())
 			.thenReturn(new McpSchema.Implementation("test-server", null, "2025-03-26"));
+		when(mcpAsyncServer.getServerCapabilities()).thenReturn(TEST_CAPABILITIES);
 
 		McpServerProperties mcpServerProperties = new McpServerProperties();
 		mcpServerProperties.setStdio(true);
@@ -306,6 +317,7 @@ class PolarisMcpServerAutoConfigurationTest {
 		// Arrange
 		McpSyncServer mcpSyncServer = mock(McpSyncServer.class);
 		when(mcpSyncServer.getServerInfo()).thenReturn(new McpSchema.Implementation("test-server", null, "2025-03-26"));
+		when(mcpSyncServer.getServerCapabilities()).thenReturn(TEST_CAPABILITIES);
 
 		McpServerProperties mcpServerProperties = new McpServerProperties();
 		mcpServerProperties.setProtocol(McpServerProperties.ServerProtocol.SSE);
@@ -336,6 +348,7 @@ class PolarisMcpServerAutoConfigurationTest {
 		// Arrange
 		McpSyncServer mcpSyncServer = mock(McpSyncServer.class);
 		when(mcpSyncServer.getServerInfo()).thenReturn(new McpSchema.Implementation("test-server", null, "2025-03-26"));
+		when(mcpSyncServer.getServerCapabilities()).thenReturn(TEST_CAPABILITIES);
 
 		McpServerProperties mcpServerProperties = new McpServerProperties();
 		mcpServerProperties.setProtocol(McpServerProperties.ServerProtocol.SSE);
@@ -366,6 +379,7 @@ class PolarisMcpServerAutoConfigurationTest {
 		// Arrange
 		McpSyncServer mcpSyncServer = mock(McpSyncServer.class);
 		when(mcpSyncServer.getServerInfo()).thenReturn(new McpSchema.Implementation("test-server", null, "2025-03-26"));
+		when(mcpSyncServer.getServerCapabilities()).thenReturn(TEST_CAPABILITIES);
 
 		McpServerProperties mcpServerProperties = new McpServerProperties();
 		mcpServerProperties.setProtocol(McpServerProperties.ServerProtocol.SSE);
@@ -396,6 +410,7 @@ class PolarisMcpServerAutoConfigurationTest {
 		// Arrange
 		McpSyncServer mcpSyncServer = mock(McpSyncServer.class);
 		when(mcpSyncServer.getServerInfo()).thenReturn(new McpSchema.Implementation("test-server", null, "2025-03-26"));
+		when(mcpSyncServer.getServerCapabilities()).thenReturn(TEST_CAPABILITIES);
 
 		McpServerProperties mcpServerProperties = new McpServerProperties();
 		mcpServerProperties.setProtocol(McpServerProperties.ServerProtocol.SSE);

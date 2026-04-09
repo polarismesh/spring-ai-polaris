@@ -162,7 +162,8 @@ public class PolarisMcpServerAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
 	public McpServerCapabilitiesProvider mcpServerCapabilitiesProviderSync(McpSyncServer server) {
-		return McpServerCapabilitiesProvider.ofSync(server::listTools, server::listResources, server::listPrompts);
+		return McpServerCapabilitiesProvider.ofSync(server::listTools, server::listResources, server::listPrompts,
+				server.getServerCapabilities());
 	}
 
 	@Bean
@@ -170,7 +171,8 @@ public class PolarisMcpServerAutoConfiguration {
 	@Conditional(McpServerAutoConfiguration.NonStatelessServerCondition.class)
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public McpServerCapabilitiesProvider mcpServerCapabilitiesProviderAsync(McpAsyncServer server) {
-		return McpServerCapabilitiesProvider.ofAsync(server::listTools, server::listResources, server::listPrompts);
+		return McpServerCapabilitiesProvider.ofAsync(server::listTools, server::listResources, server::listPrompts,
+				server.getServerCapabilities());
 	}
 
 	@Bean
@@ -180,7 +182,8 @@ public class PolarisMcpServerAutoConfiguration {
 			matchIfMissing = true)
 	public McpServerCapabilitiesProvider mcpServerCapabilitiesProviderStatelessSync(
 			McpStatelessSyncServer server) {
-		return McpServerCapabilitiesProvider.ofSync(server::listTools, server::listResources, server::listPrompts);
+		return McpServerCapabilitiesProvider.ofSync(server::listTools, server::listResources, server::listPrompts,
+				server.getServerCapabilities());
 	}
 
 	@Bean
@@ -189,7 +192,8 @@ public class PolarisMcpServerAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public McpServerCapabilitiesProvider mcpServerCapabilitiesProviderStatelessAsync(
 			McpStatelessAsyncServer server) {
-		return McpServerCapabilitiesProvider.ofAsync(server::listTools, server::listResources, server::listPrompts);
+		return McpServerCapabilitiesProvider.ofAsync(server::listTools, server::listResources, server::listPrompts,
+				server.getServerCapabilities());
 	}
 
 	// ---- Contract Reporter ----

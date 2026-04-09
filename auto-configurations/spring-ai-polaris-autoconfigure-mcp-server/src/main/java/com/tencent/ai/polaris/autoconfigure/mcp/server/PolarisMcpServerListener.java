@@ -119,8 +119,12 @@ public class PolarisMcpServerListener implements ApplicationListener<WebServerIn
 			List<McpSchema.Tool> tools = this.capabilitiesProvider.listTools();
 			List<McpSchema.Resource> resources = this.capabilitiesProvider.listResources();
 			List<McpSchema.Prompt> prompts = this.capabilitiesProvider.listPrompts();
+			List<String> requestHandlerMethods = this.capabilitiesProvider.listRequestHandlerMethods();
+			List<String> notificationHandlerMethods = this.capabilitiesProvider.listNotificationHandlerMethods();
 
-			this.contractReporter.reportContract(this.registry.getProtocol(), tools, resources, prompts);
+			this.contractReporter.reportContract(this.registry.getProtocol(),
+					this.registry.getEndpointPath(), tools, resources, prompts,
+					requestHandlerMethods, notificationHandlerMethods);
 		}
 		catch (Exception ex) {
 			logger.error("Failed to report MCP server contract to Polaris.", ex);
