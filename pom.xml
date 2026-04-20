@@ -80,12 +80,12 @@
 
     <properties>
         <!-- Project revision -->
-        <revision>0.0.1-SNAPSHOT</revision>
+        <revision>0.1.0-SNAPSHOT</revision>
 
         <!-- Dependency versions -->
-        <spring-ai.version>1.1.3</spring-ai.version>
+        <spring-ai.version>1.1.4</spring-ai.version>
         <polaris-java.version>2.1.2.0-SNAPSHOT</polaris-java.version>
-        <spring-boot.version>3.5.12</spring-boot.version>
+        <spring-boot.version>3.5.13</spring-boot.version>
         <mcp.sdk.version>0.17.0</mcp.sdk.version>
 
         <!-- Maven Plugin Versions -->

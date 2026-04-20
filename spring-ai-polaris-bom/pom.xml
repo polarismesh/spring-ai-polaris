@@ -53,7 +53,7 @@
     </scm>
 
     <properties>
-        <revision>0.0.1-SNAPSHOT</revision>
+        <revision>0.1.0-SNAPSHOT</revision>
         <flatten-maven-plugin.version>1.7.0</flatten-maven-plugin.version>
     </properties>
 
