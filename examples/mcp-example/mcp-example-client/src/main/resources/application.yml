@@ -18,4 +18,6 @@ spring:
         client:
           services:
             my-weather:
+              service-name: mcp-example-streamable-webmvc-server
+            my-time:
               service-name: mcp-example-sse-webflux-server

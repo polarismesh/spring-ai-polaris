@@ -48,6 +48,8 @@ import com.tencent.polaris.api.utils.StringUtils;
  * <ul>
  * <li>{@code POST /mcp/chat} — sends a user message to the LLM with all discovered MCP
  * tools available for automatic tool calling.</li>
+ * <li>{@code POST /mcp/tool/list} — lists all available MCP tools from discovered
+ * servers.</li>
  * <li>{@code POST /mcp/tool/call} — directly invokes a specific MCP tool by name without
  * going through the LLM.</li>
  * <li>{@code POST /mcp/resource/list} — lists all available MCP resources from discovered
@@ -125,6 +127,20 @@ public class McpClientController {
 
 		LOG.info("User message content: {}", userMessage);
 		return this.chatClient.prompt(userMessage.toString()).call().content();
+	}
+
+	/**
+	 * Lists all available MCP tools from discovered servers.
+	 * @return a list of tools aggregated from all connected MCP servers
+	 */
+	@PostMapping("/tool/list")
+	public Object listTools() {
+		List<McpSchema.Tool> allTools = new ArrayList<>();
+		for (PolarisMcpSyncClientCluster cluster : this.polarisMcpSyncClientClusters) {
+			McpSchema.ListToolsResult result = cluster.listTools();
+			allTools.addAll(result.tools());
+		}
+		return allTools;
 	}
 
 	/**
