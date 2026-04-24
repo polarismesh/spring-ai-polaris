@@ -40,6 +40,8 @@ import com.tencent.ai.polaris.core.reporter.PolarisReporter;
 import com.tencent.ai.polaris.mcp.common.PolarisMcpMetadataKeys;
 import com.tencent.polaris.api.exception.PolarisException;
 import com.tencent.polaris.api.pojo.Instance;
+import com.tencent.polaris.api.pojo.ServiceChangeEvent;
+import com.tencent.polaris.api.pojo.ServiceChangeEvent.OneInstanceUpdate;
 import com.tencent.polaris.api.rpc.GetHealthyInstancesRequest;
 import com.tencent.polaris.api.rpc.InstancesResponse;
 import com.tencent.polaris.api.rpc.UnWatchServiceRequest;
@@ -163,7 +165,7 @@ public abstract class AbstractPolarisMcpClientCluster<T extends AbstractPolarisM
 		List<Instance> instances = fetchHealthyInstances();
 		for (Instance instance : instances) {
 			Node key = instanceNode(instance);
-			this.keyToClientMap.computeIfAbsent(key, k -> createWrapper(instance, key));
+			addIfAbsent(key, instance);
 		}
 		logger.info("[Polaris MCP Client] Initialized {} clients for service={}", this.keyToClientMap.size(),
 				this.serverName);
@@ -181,47 +183,79 @@ public abstract class AbstractPolarisMcpClientCluster<T extends AbstractPolarisM
 			.service(this.serverName)
 			.listeners(List.of(event -> {
 				try {
+					logger.info("[Polaris MCP Client] Received watch event for service={}: {}", this.serverName,
+							summarizeEvent(event));
 					List<Node> added = new ArrayList<>();
 					List<Node> removed = new ArrayList<>();
 					List<String> updated = new ArrayList<>();
 					// Add new instances
 					if (CollectionUtils.isNotEmpty(event.getAddInstances())) {
 						for (Instance inst : event.getAddInstances()) {
-							if (!inst.isHealthy()) {
+							if (!isAvailable(inst)) {
 								continue;
 							}
 							Node key = instanceNode(inst);
-							this.keyToClientMap.computeIfAbsent(key, k -> createWrapper(inst, key));
-							added.add(key);
+							try {
+								if (addIfAbsent(key, inst)) {
+									added.add(key);
+								}
+							}
+							catch (Exception ex) {
+								logger.warn("[Polaris MCP Client] Failed to add instance for service={}, node={}",
+										this.serverName, key, ex);
+							}
 						}
 					}
 					// Remove deleted instances
 					if (CollectionUtils.isNotEmpty(event.getDeleteInstances())) {
 						for (Instance inst : event.getDeleteInstances()) {
 							Node key = instanceNode(inst);
-							T old = this.keyToClientMap.remove(key);
-							if (old != null) {
-								old.closeClientGracefully();
+							try {
+								T old = this.keyToClientMap.remove(key);
+								if (old != null) {
+									old.closeClientGracefully();
+									removed.add(key);
+								}
 							}
-							removed.add(key);
+							catch (Exception ex) {
+								logger.warn("[Polaris MCP Client] Failed to remove instance for service={}, node={}",
+										this.serverName, key, ex);
+							}
 						}
 					}
-					// Update changed instances: remove old, add new
+					// Update changed instances: build after first, then swap
 					if (CollectionUtils.isNotEmpty(event.getUpdateInstances())) {
 						event.getUpdateInstances().forEach(update -> {
 							Node beforeKey = instanceNode(update.getBefore());
-							T old = this.keyToClientMap.remove(beforeKey);
-							if (old != null) {
-								old.closeClientGracefully();
+							try {
+								if (isAvailable(update.getAfter())) {
+									Node afterKey = instanceNode(update.getAfter());
+									T newWrapper = createWrapper(update.getAfter(), afterKey);
+									T oldAfter = this.keyToClientMap.put(afterKey, newWrapper);
+									if (oldAfter != null) {
+										oldAfter.closeClientGracefully();
+									}
+									if (!beforeKey.equals(afterKey)) {
+										T oldBefore = this.keyToClientMap.remove(beforeKey);
+										if (oldBefore != null) {
+											oldBefore.closeClientGracefully();
+										}
+									}
+									updated.add(beforeKey + "->" + afterKey);
+								}
+								else {
+									T oldBefore = this.keyToClientMap.remove(beforeKey);
+									if (oldBefore != null) {
+										oldBefore.closeClientGracefully();
+									}
+									updated.add(beforeKey + "->removed(unavailable)");
+								}
 							}
-							if (update.getAfter().isHealthy()) {
-								Node afterKey = instanceNode(update.getAfter());
-								this.keyToClientMap.computeIfAbsent(afterKey,
-										k -> createWrapper(update.getAfter(), afterKey));
-								updated.add(beforeKey + "->" + afterKey);
-							}
-							else {
-								updated.add(beforeKey + "->removed(unhealthy)");
+							catch (Exception ex) {
+								// Keep before in the pool; next watch event or subsequent
+								// invocation will have a chance to retry.
+								logger.warn("[Polaris MCP Client] Failed to apply update for service={}, before={}",
+										this.serverName, beforeKey, ex);
 							}
 						});
 					}
@@ -245,7 +279,13 @@ public abstract class AbstractPolarisMcpClientCluster<T extends AbstractPolarisM
 		// watchService()
 		for (Instance instance : fetchHealthyInstances()) {
 			Node key = instanceNode(instance);
-			this.keyToClientMap.computeIfAbsent(key, k -> createWrapper(instance, key));
+			try {
+				addIfAbsent(key, instance);
+			}
+			catch (Exception ex) {
+				logger.warn("[Polaris MCP Client] Failed to add instance during race-window sweep"
+						+ " for service={}, node={}", this.serverName, key, ex);
+			}
 		}
 		logger.info("[Polaris MCP Client] Watch registered for service={}. pool size={}", this.serverName,
 				this.keyToClientMap.size());
@@ -311,6 +351,30 @@ public abstract class AbstractPolarisMcpClientCluster<T extends AbstractPolarisM
 		}
 	}
 
+	private static boolean isAvailable(Instance instance) {
+		return instance != null && instance.isHealthy() && !instance.isIsolated();
+	}
+
+	/**
+	 * Build the wrapper outside of any map-level lock, then publish it via
+	 * {@code putIfAbsent}. {@code createWrapper} may block on network IO (e.g. MCP
+	 * initialize), so running it inside {@link java.util.concurrent.ConcurrentHashMap
+	 * #computeIfAbsent} would hold the bin lock for the entire network round-trip.
+	 * @return {@code true} if the new wrapper was placed into the pool
+	 */
+	private boolean addIfAbsent(Node key, Instance instance) {
+		if (this.keyToClientMap.containsKey(key)) {
+			return false;
+		}
+		T wrapper = createWrapper(instance, key);
+		T prev = this.keyToClientMap.putIfAbsent(key, wrapper);
+		if (prev != null) {
+			wrapper.closeClientGracefully();
+			return false;
+		}
+		return true;
+	}
+
 	private T createWrapper(Instance instance, Node node) {
 		String protocol = instance.getProtocol();
 		String endpointPath = resolveEndpointPath(instance);
@@ -367,6 +431,57 @@ public abstract class AbstractPolarisMcpClientCluster<T extends AbstractPolarisM
 	 */
 	protected PolarisReporter getPolarisReporter() {
 		return this.polarisReporter;
+	}
+
+	/**
+	 * Build a concise one-line summary of a {@link ServiceChangeEvent} for logging. Avoids
+	 * the verbose default {@code toString()} which dumps the full {@code allInstances}
+	 * list and every field of each instance.
+	 * @param event the watch event
+	 * @return a summary string like {@code add=[h:p(healthy,protocol)], delete=[...],
+	 * update=[h1:p1->h2:p2(healthy,protocol)]}
+	 */
+	private static String summarizeEvent(ServiceChangeEvent event) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("add=").append(formatInstances(event.getAddInstances()));
+		sb.append(", delete=").append(formatInstances(event.getDeleteInstances()));
+		sb.append(", update=[");
+		List<OneInstanceUpdate> updates = event.getUpdateInstances();
+		if (CollectionUtils.isNotEmpty(updates)) {
+			for (int i = 0; i < updates.size(); i++) {
+				if (i > 0) {
+					sb.append(", ");
+				}
+				OneInstanceUpdate u = updates.get(i);
+				sb.append(formatInstance(u.getBefore())).append("->").append(formatInstance(u.getAfter()));
+			}
+		}
+		sb.append("]");
+		return sb.toString();
+	}
+
+	private static String formatInstances(List<Instance> instances) {
+		if (CollectionUtils.isEmpty(instances)) {
+			return "[]";
+		}
+		StringBuilder sb = new StringBuilder("[");
+		for (int i = 0; i < instances.size(); i++) {
+			if (i > 0) {
+				sb.append(", ");
+			}
+			sb.append(formatInstance(instances.get(i)));
+		}
+		sb.append("]");
+		return sb.toString();
+	}
+
+	private static String formatInstance(Instance instance) {
+		if (instance == null) {
+			return "null";
+		}
+		return instance.getHost() + ":" + instance.getPort() + "(" + (instance.isHealthy() ? "healthy" : "unhealthy")
+				+ "," + (instance.isIsolated() ? "isolated" : "notIsolated") + ","
+				+ (StringUtils.isBlank(instance.getProtocol()) ? "-" : instance.getProtocol()) + ")";
 	}
 
 }

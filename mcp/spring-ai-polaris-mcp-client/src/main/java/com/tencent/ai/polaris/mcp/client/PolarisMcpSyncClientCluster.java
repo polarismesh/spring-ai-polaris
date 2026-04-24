@@ -24,6 +24,8 @@ import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.mcp.customizer.McpSyncClientCustomizer;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -40,6 +42,8 @@ import com.tencent.polaris.client.pojo.Node;
  * @author Haotian Zhang
  */
 public class PolarisMcpSyncClientCluster extends AbstractPolarisMcpClientCluster<PolarisMcpSyncClient> {
+
+	private static final Logger logger = LoggerFactory.getLogger(PolarisMcpSyncClientCluster.class);
 
 	private final List<McpSyncClientCustomizer> customizers;
 
@@ -61,7 +65,14 @@ public class PolarisMcpSyncClientCluster extends AbstractPolarisMcpClientCluster
 		}
 		McpSyncClient client = spec.build();
 		if (initialized) {
-			client.initialize();
+			// Failure is tolerated: SDK will retry initialize lazily on first business call
+			try {
+				client.initialize();
+			}
+			catch (Exception ex) {
+				logger.warn("[Polaris MCP Client] Eager initialize failed for {}; will retry lazily on first call",
+						connectedName, ex);
+			}
 		}
 		return new PolarisMcpSyncClient(client, node, getNamespace(), getServerName(),
 				getPolarisReporter());
